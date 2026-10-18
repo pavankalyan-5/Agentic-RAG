@@ -1,1 +1,101 @@
-# Agentic-RAG
+# Dev Docs Copilot: Agentic RAG over a codebase
+
+An onboarding assistant that answers engineers' questions about a codebase using its **docs, issues, pull requests, and review discussions**. Every claim is cited, and the assistant can take GitHub actions after a human approves them.
+
+> *"Why did they switch sessions from Redis to Postgres?"*
+> *"Is there an open bug about background tasks, and has anyone tried fixing it?"*
+> *"How do I configure request timeouts?"*
+
+### Why RAG?
+
+In real use this runs against a company's **private** repositories, which no LLM was trained on, and the content changes every day. The portfolio demo indexes a public repo only because private data can't be shown. The evaluation suite (planned) measures the benefit directly by comparing answers **with and without retrieval** on the same questions.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Ingestion
+        GH[GitHub REST API<br/>issues, PRs, comments] --> R
+        GIT[Shallow git clone<br/>Markdown docs] --> R
+        R[PII redaction<br/>Presidio] --> C[Type-aware chunking]
+        C --> E[Embeddings<br/>via budget gateway]
+    end
+
+    subgraph Postgres["PostgreSQL (ParadeDB)"]
+        D[(documents)]
+        CH[(chunks<br/>pgvector HNSW + BM25)]
+        S[(sync_state)]
+        L[(llm_usage / llm_cache)]
+    end
+
+    E --> CH
+    E --> D
+    Q[Question] --> HS[Hybrid search<br/>dense + BM25 → RRF]
+    CH --> HS
+    HS --> A[LangGraph agent<br/><i>planned</i>]
+    A --> MCP[GitHub MCP tools<br/><i>planned</i>]
+```
+
+**Everything lives in one PostgreSQL database**: documents, chunks with vector embeddings (pgvector), a BM25 keyword index (ParadeDB `pg_search`), sync checkpoints, and an LLM cost ledger. One database means fewer moving parts to run and keep consistent.
+
+## What's built so far
+
+| Component | Highlights |
+|---|---|
+| **Ingestion** | GitHub issues and PRs (with comments and review comments) plus Markdown docs from a shallow clone. **Incremental sync** with GitHub's `since` parameter, and a checkpoint that only advances after a fully successful pass. |
+| **PII redaction** | Presidio removes emails, phone numbers, card numbers, SSNs, IP addresses, and leaked API tokens (`ghp_…`, `sk-…`, `AKIA…`) **before** embedding, so the vector index never contains PII. |
+| **Chunking** | Docs are split at headings (and ignore `#` lines inside code blocks). Issue and PR threads are kept whole when they fit; when split, each piece repeats the `#123 Title` header so it still makes sense alone. Token-bounded with tiktoken. |
+| **Idempotent pipeline** | Content hashing skips re-embedding unchanged text (a re-sync costs $0) while still refreshing metadata such as an issue being closed. Each document is written in its own transaction. Docs deleted from the repo are removed from the index. |
+| **Hybrid search** | Dense (cosine similarity, HNSW), sparse (BM25), and **Reciprocal Rank Fusion**, with parameterized filters by type, state, and date. Safe on arbitrary user input. |
+| **Budget gateway** | The only module that calls OpenAI. It caches responses, records the cost of every call, retries with exponential backoff and jitter, and **refuses to call once a spend ceiling is reached**. |
+
+## Roadmap
+
+- [x] **Plan 1: Foundation.** Storage, ingestion, PII redaction, chunking, hybrid search *(CLI and first real index in progress)*
+- [ ] **Plan 2: Agent.** LangGraph planner (query decomposition), cross-encoder reranking, Postgres checkpointing, retries, cited answers
+- [ ] **Plan 3: Tools and human-in-the-loop.** GitHub MCP tools, approval-gated write actions, FastAPI and a chat UI
+- [ ] **Plan 4: Observability and evals.** OpenTelemetry/OpenInference traces in Arize Phoenix, cost and latency per request, DeepEval golden set, GitHub Actions quality gate, retrieval experiments
+- [ ] **Plan 5: Guardrails.** Prompt-injection detection (including in retrieved content), citation verification, role-based action authorization
+
+Design document: [`docs/superpowers/specs/2026-10-18-dev-docs-copilot-design.md`](docs/superpowers/specs/2026-10-18-dev-docs-copilot-design.md)
+
+## Tech stack
+
+Python 3.12 · uv · PostgreSQL 18 (ParadeDB: pgvector + pg_search) · psycopg 3 · OpenAI `text-embedding-3-small` · Presidio + spaCy · tiktoken · httpx · pydantic-settings · pytest + respx · Docker Compose
+*Planned:* LangGraph · MCP · FastAPI · OpenTelemetry · Arize Phoenix · DeepEval · GitHub Actions
+
+## Getting started
+
+```bash
+# 1. Start Postgres (ParadeDB with pgvector + pg_search)
+docker compose up -d --wait db
+
+# 2. Create the virtualenv and install dependencies
+uv venv --python 3.12
+uv sync
+
+# 3. Configure
+cp .env.example .env      # add your OpenAI key and a read-only GitHub token
+
+# 4. Run the test suite (uses a separate copilot_test database; no network calls)
+uv run pytest
+```
+
+## Running on a small budget
+
+The whole project is built to run on **$10 of OpenAI credit**:
+- every call goes through one gateway with a hard spend ceiling (`COPILOT_BUDGET_USD`, default $8);
+- embeddings are cached by content hash, so re-indexing unchanged text is free;
+- cheap models by default, with stronger ones available as a config switch.
+
+## Testing
+
+The tests run against a **real Postgres database**, because BM25 and vector queries *are* the logic. GitHub is mocked with `respx`, and OpenAI is replaced with deterministic fakes. They cover:
+- a sync failing midway (progress kept, checkpoint not advanced);
+- re-running a sync on unchanged data (zero embedding calls, no duplicate chunks);
+- PII never being stored;
+- user queries full of punctuation;
+- rate-limit retries;
+- RRF math.
