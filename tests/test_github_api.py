@@ -85,6 +85,41 @@ def test_retries_on_403_rate_limit(respx_mock):
     assert route.call_count == 2
 
 
+def test_retries_secondary_rate_limit_403_with_retry_after(respx_mock):
+    # Review #5: GitHub's secondary limit is a 403 with Retry-After, without X-RateLimit-Remaining: 0.
+    route = respx_mock.get(f"{API}/repos/o/r/issues")
+    route.side_effect = [
+        httpx.Response(403, headers={"Retry-After": "1"}, json={"message": "You have exceeded a secondary rate limit"}),
+        httpx.Response(200, json=[]),
+    ]
+    list(client().iter_threads("o/r", SINCE))
+    assert route.call_count == 2
+
+
+def test_lists_all_pages_before_fetching_comments(respx_mock):
+    # Review #4: paging lazily while fetching comments lets items shift between pages and get skipped.
+    page2 = f"{API}/repos/o/r/issues?page=2"
+    respx_mock.get(page2).respond(json=[item(2)])
+    respx_mock.get(f"{API}/repos/o/r/issues").respond(json=[item(1)], headers={"Link": f'<{page2}>; rel="next"'})
+    respx_mock.get(url__regex=r".*/comments").respond(json=[])
+    list(client().iter_threads("o/r", SINCE))
+    paths = [c.request.url.path + ("?page=2" if c.request.url.params.get("page") else "") for c in respx_mock.calls]
+    listing = [i for i, p in enumerate(paths) if p.startswith("/repos/o/r/issues") and "comments" not in p]
+    comments = [i for i, p in enumerate(paths) if "comments" in p]
+    assert max(listing) < min(comments)
+
+
+def test_duplicate_listing_items_yielded_once(respx_mock):
+    page2 = f"{API}/repos/o/r/issues?page=2"
+    respx_mock.get(page2).respond(json=[item(1, updated="2026-02-02T00:00:00Z"), item(2)])
+    respx_mock.get(f"{API}/repos/o/r/issues").respond(json=[item(1)], headers={"Link": f'<{page2}>; rel="next"'})
+    respx_mock.get(url__regex=r".*/comments").respond(json=[])
+    docs = list(client().iter_threads("o/r", SINCE))
+    # Each item once, in ascending updated_at order (#1 moved to page 2 after being updated).
+    assert [d.number for d in docs] == [2, 1]
+    assert docs[1].updated_at.isoformat() == "2026-02-02T00:00:00+00:00"
+
+
 def test_does_not_retry_plain_403(respx_mock):
     route = respx_mock.get(f"{API}/repos/o/r/issues").respond(403)
     with pytest.raises(httpx.HTTPStatusError):

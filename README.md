@@ -53,7 +53,7 @@ flowchart LR
 
 ## Roadmap
 
-- [x] **Plan 1: Foundation.** Storage, ingestion, PII redaction, chunking, hybrid search *(CLI and first real index in progress)*
+- [x] **Plan 1: Foundation.** Storage, ingestion, PII redaction, chunking, hybrid search, CLI, first real index
 - [ ] **Plan 2: Agent.** LangGraph planner (query decomposition), cross-encoder reranking, Postgres checkpointing, retries, cited answers
 - [ ] **Plan 3: Tools and human-in-the-loop.** GitHub MCP tools, approval-gated write actions, FastAPI and a chat UI
 - [ ] **Plan 4: Observability and evals.** OpenTelemetry/OpenInference traces in Arize Phoenix, cost and latency per request, DeepEval golden set, GitHub Actions quality gate, retrieval experiments
@@ -81,7 +81,35 @@ cp .env.example .env      # add your OpenAI key and a read-only GitHub token
 
 # 4. Run the test suite (uses a separate copilot_test database; no network calls)
 uv run pytest
+
+# 5. Build the index and search it
+uv run copilot init-db                     # create tables (safe to re-run)
+uv run copilot sync --since-months 1       # first sync; later runs are incremental
+uv run copilot sync --full                 # re-process the window after rule changes (re-embeds only changed text)
+uv run copilot search "BaseHTTPMiddleware" --mode hybrid -k 5
+uv run copilot search "upload size" --type pr --state merged
+uv run copilot spend                       # total OpenAI spend vs. ceiling
 ```
+
+## First real index: Kludex/starlette
+
+| | |
+|---|---|
+| Indexed | 30 doc pages + 125 issues/PRs (last month) → **582 chunks** |
+| First sync | 3 min 45 s, **$0.0057** |
+| Re-sync with no changes | 10 s, **$0.0000**. Content hashes match, so nothing is re-embedded. |
+
+**Early observations** (the starting point for the retrieval experiment in plan 4):
+
+| Query | Dense | BM25 | Hybrid (RRF) |
+|---|---|---|---|
+| `BaseHTTPMiddleware` | middleware docs | **PR #3564** (directly about it), then the docs | middleware docs (drops the PR) |
+| "run code when the app starts and shuts down" | **lifespan** docs | **lifespan** docs | **lifespan** docs |
+| "limit the size of uploaded files in multipart forms" | Benchmarks, routing, **PR #3605** | **requests** docs | Benchmarks, middleware, **requests** |
+
+- **BM25 wins on exact identifiers. Dense wins on paraphrased questions.** Neither is enough alone.
+- **RRF over three results isn't automatically better.** It can bury the best candidate from either side, which is why plan 2 adds a cross-encoder reranker over a larger candidate pool, and plan 4 measures hit rate per strategy instead of assuming.
+- **Cleaning the data mattered.** Changelog-style files were half of all doc chunks and showed up in almost every result list. Excluding them (they summarize PRs that are already indexed) noticeably improved results.
 
 ## Running on a small budget
 

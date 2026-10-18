@@ -82,5 +82,20 @@ def test_empty_body_thread_still_chunks_title(empty_issue_doc):
     assert len(chunks) == 1 and chunks[0].text.startswith("#7 Empty")
 
 
+def test_long_heading_does_not_crash():
+    # Review #1: a heading longer than the chunk budget used to raise ValueError and abort the sync.
+    long_heading = "word " * 600
+    chunks = chunk_markdown(f"# {long_heading}\nbody text", max_tokens=500)
+    assert chunks and all(count_tokens(c.text) <= 500 for c in chunks)
+    assert chunks[0].heading == long_heading.strip()  # full heading kept as metadata
+    assert len(chunks) == 1  # the prefix is capped, so the body isn't shredded into tiny pieces
+
+
+def test_long_thread_title_does_not_crash():
+    doc = thread(8, "word " * 1000, "body", [])
+    chunks = chunk_thread(doc, max_tokens=300)
+    assert chunks and all(count_tokens(c.text) <= 300 for c in chunks)
+
+
 def test_empty_markdown_gives_no_chunks():
     assert chunk_markdown("   ") == []

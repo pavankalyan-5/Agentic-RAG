@@ -38,8 +38,7 @@ class LLMGateway:
         self.client = client or openai.OpenAI(api_key=settings.openai_api_key)
 
     def spent_usd(self) -> float:
-        row = self.conn.execute("select coalesce(sum(cost_usd), 0) as total from llm_usage").fetchone()
-        return float(row["total"])
+        return spent_usd(self.conn)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         model = self.settings.embedding_model
@@ -87,6 +86,11 @@ class LLMGateway:
             (model, operation, tokens, cost, cached),
         )
         self.conn.commit()
+
+
+def spent_usd(conn: psycopg.Connection) -> float:
+    row = conn.execute("select coalesce(sum(cost_usd), 0) as total from llm_usage").fetchone()
+    return float(row["total"])
 
 
 def _cache_key(model: str, text: str) -> str:

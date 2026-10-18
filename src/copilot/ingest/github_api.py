@@ -33,7 +33,13 @@ class GitHubClient:
             "direction": "asc",
             "per_page": 100,
         }
+        # List every page FIRST (fast: 100 items/request), then fetch comments. Paging lazily while
+        # spending minutes on comments lets items updated mid-crawl shift pages, so one gets skipped.
+        latest: dict[int, dict] = {}
         for raw in self._paginate(f"{self.base_url}/repos/{repo}/issues", params):
+            latest[raw["number"]] = raw  # an item that moved pages appears twice; keep the newest copy
+        # Ascending updated_at order is what makes the pipeline's progress checkpoints safe.
+        for raw in sorted(latest.values(), key=lambda r: r["updated_at"]):
             yield self._to_doc(repo, raw)
 
     def _to_doc(self, repo: str, raw: dict) -> SourceDoc:
@@ -92,8 +98,15 @@ class GitHubClient:
 def _is_retryable(resp: httpx.Response) -> bool:
     if resp.status_code == 429 or resp.status_code >= 500:
         return True
-    # GitHub signals an exhausted rate limit with 403 + X-RateLimit-Remaining: 0
-    return resp.status_code == 403 and resp.headers.get("X-RateLimit-Remaining") == "0"
+    if resp.status_code != 403:
+        return False
+    # Primary limit: X-RateLimit-Remaining: 0. Secondary ("abuse") limit: Retry-After and/or a message.
+    # A plain 403 (no permission) is not retried — waiting won't help.
+    return (
+        resp.headers.get("X-RateLimit-Remaining") == "0"
+        or "Retry-After" in resp.headers
+        or "rate limit" in resp.text.lower()
+    )
 
 
 def _wait_seconds(resp: httpx.Response, attempt: int) -> float:

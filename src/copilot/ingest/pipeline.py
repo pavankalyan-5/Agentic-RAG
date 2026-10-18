@@ -1,7 +1,7 @@
 """Fetch -> redact -> chunk -> embed -> store, with incremental sync."""
 
 import hashlib
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -14,6 +14,8 @@ from copilot.ingest.github_api import GitHubClient
 from copilot.ingest.models import SourceDoc
 from copilot.ingest.redact import redact
 from copilot.llm.gateway import Embedder
+
+CHECKPOINT_EVERY = 50  # threads between progress checkpoints during a sync
 
 
 @dataclass
@@ -73,7 +75,11 @@ def sync_repo(
     repo: str,
     since_months: int,
     workdir: Path,
+    full: bool = False,
 ) -> dict[str, IngestStats]:
+    """Sync docs and threads. full=True ignores the thread checkpoint and re-fetches the whole
+    since_months window — use it after redaction/chunking rules change. Only items whose processed
+    text actually changed get re-embedded (content hash), so it costs little."""
     results: dict[str, IngestStats] = {}
 
     started_at = datetime.now(timezone.utc)
@@ -85,11 +91,29 @@ def sync_repo(
 
     # Record the start time BEFORE fetching so items updated during the run are picked up next time.
     started_at = datetime.now(timezone.utc)
-    since = _last_synced(conn, repo, "threads") or started_at - timedelta(days=30 * since_months)
-    results["threads"] = ingest_documents(conn, embedder, gh.iter_threads(repo, since))
+    last = None if full else _last_synced(conn, repo, "threads")
+    since = last or started_at - timedelta(days=30 * since_months)
+    threads = _checkpointed(conn, repo, gh.iter_threads(repo, since), started_at)
+    results["threads"] = ingest_documents(conn, embedder, threads)
     _mark_synced(conn, repo, "threads", started_at)
 
     return results
+
+
+def _checkpointed(
+    conn: psycopg.Connection, repo: str, docs: Iterable[SourceDoc], started_at: datetime
+) -> Iterator[SourceDoc]:
+    """Pass threads through, saving a progress watermark every CHECKPOINT_EVERY items.
+
+    Threads arrive in ascending updated_at order, so once item N is committed everything before it
+    is too: a failed run can resume from item N's updated_at instead of starting over. The generator
+    resumes after `yield` only when ingest_documents asks for the next item, i.e. after it committed
+    this one. The watermark is clamped to started_at so a future-dated item can't skip real changes.
+    """
+    for i, doc in enumerate(docs, start=1):
+        yield doc
+        if i % CHECKPOINT_EVERY == 0:
+            _mark_synced(conn, repo, "threads", min(doc.updated_at, started_at))
 
 
 def _redacted(doc: SourceDoc) -> SourceDoc:

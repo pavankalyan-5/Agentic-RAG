@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -98,6 +99,31 @@ def test_failure_midway_keeps_progress_and_does_not_advance_sync_state(db, tmp_p
     assert db.execute("select * from sync_state where source = 'threads'").fetchone() is None
 
 
+def test_thread_progress_is_checkpointed_so_a_failed_run_still_moves_forward(db, tmp_path, no_docs, monkeypatch):
+    # Review #3: without intermediate checkpoints a big first sync restarts from scratch forever.
+    monkeypatch.setattr(pipeline, "CHECKPOINT_EVERY", 2)
+    threads = [replace(issue(n), updated_at=NOW + timedelta(hours=n)) for n in range(1, 6)]
+    gh = FakeGitHub(threads, fail_after=3)  # issues 1-3 committed, then the fetch dies
+    with pytest.raises(httpx.HTTPStatusError):
+        sync_repo(db, FakeEmbedder(), gh, "o/r", 12, tmp_path)
+    mark = db.execute("select last_synced_at from sync_state where source = 'threads'").fetchone()
+    assert mark["last_synced_at"] == NOW + timedelta(hours=2)  # checkpoint after the 2nd committed item
+
+    gh2 = FakeGitHub(threads)
+    sync_repo(db, FakeEmbedder(), gh2, "o/r", 12, tmp_path)
+    assert gh2.since_calls[0] == NOW + timedelta(hours=2)  # resumed, not restarted
+
+
+def test_checkpoint_never_passes_run_start(db, tmp_path, no_docs, monkeypatch):
+    monkeypatch.setattr(pipeline, "CHECKPOINT_EVERY", 1)
+    future = datetime.now(timezone.utc) + timedelta(days=1)  # clock skew / edits during the run
+    gh = FakeGitHub([replace(issue(1), updated_at=future), issue(2)], fail_after=1)
+    with pytest.raises(httpx.HTTPStatusError):
+        sync_repo(db, FakeEmbedder(), gh, "o/r", 12, tmp_path)
+    mark = db.execute("select last_synced_at from sync_state where source = 'threads'").fetchone()
+    assert mark["last_synced_at"] < future
+
+
 def test_first_sync_uses_since_months_then_last_synced_at(db, tmp_path, no_docs):
     gh = FakeGitHub([issue(1)])
     before = datetime.now(timezone.utc)
@@ -109,6 +135,14 @@ def test_first_sync_uses_since_months_then_last_synced_at(db, tmp_path, no_docs)
     sync_repo(db, FakeEmbedder(), gh, "o/r", 12, tmp_path)
     assert gh.since_calls[1] == stored["last_synced_at"]
     assert stored["last_synced_at"] >= before
+
+
+def test_full_sync_ignores_checkpoint(db, tmp_path, no_docs):
+    # After redaction/chunking rules change, unchanged-on-GitHub threads must be re-processed.
+    gh = FakeGitHub([issue(1)])
+    sync_repo(db, FakeEmbedder(), gh, "o/r", 1, tmp_path)
+    sync_repo(db, FakeEmbedder(), gh, "o/r", 1, tmp_path, full=True)
+    assert gh.since_calls[1] < datetime.now(timezone.utc) - timedelta(days=29)
 
 
 def test_deleted_doc_files_are_removed(db, tmp_path, monkeypatch):

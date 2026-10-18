@@ -22,6 +22,9 @@ dependencies = [
 ]
 
 
+[project.scripts]
+copilot = "copilot.cli:app"
+
 [build-system]
 requires = ["uv_build>=0.9.17,<0.10.0"]
 build-backend = "uv_build"
