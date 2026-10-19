@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev Docs Copilot</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f0f2f5; --text: #1b1f24; --muted: #5d6673;
+    --faint: #8b949e; --line: #dde1e6; --accent: #2f5bea; --accent-soft: #e8eeff; --on-accent: #ffffff;
+    --open: #1a7f37; --open-soft: #dafbe1; --merged: #8250df; --merged-soft: #f3eeff;
+    --closed: #cf222e; --closed-soft: #ffebe9; --doc: #0969da; --doc-soft: #ddf4ff;
+    --warn: #9a6700; --warn-soft: #fff8c5; --code-bg: #f3f4f6; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --surface: #171b21; --surface-2: #1f242c; --text: #e6e9ed; --muted: #a2abb6;
+      --faint: #6e7781; --line: #2b313a; --accent: #7c9cff; --accent-soft: #1d2647; --on-accent: #0b0e14;
+      --open: #3fb950; --open-soft: #12261a; --merged: #a371f7; --merged-soft: #221a35;
+      --closed: #f85149; --closed-soft: #2d1416; --doc: #58a6ff; --doc-soft: #102236;
+      --warn: #d29922; --warn-soft: #2a2110; --code-bg: #12161c; --shadow: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  svg { flex: none; }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topbar .inner { max-width: 880px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+  .brand .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: var(--on-accent);
+                 display: grid; place-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+          border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: 12.5px;
+          white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .spacer { flex: 1; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .dot.ok { background: var(--open); } .dot.bad { background: var(--closed); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface);
+         border-radius: 8px; padding: 6px 12px; font-size: 13.5px; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn.success { background: var(--open); border-color: var(--open); color: #fff; }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .popover { position: absolute; right: 16px; top: 52px; width: min(360px, calc(100vw - 32px)); background: var(--surface);
+             border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+  .popover label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .popover .row { display: flex; gap: 8px; }
+  input[type=password], input[type=text], textarea { width: 100%; font: inherit; color: inherit; background: var(--surface);
+         border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  input:focus, textarea:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 0;
+         border-color: var(--accent); }
+
+  /* ---------- conversation ---------- */
+  main { max-width: 880px; margin: 0 auto; padding: 24px 16px 170px; }
+  .empty { text-align: center; padding: 48px 0 8px; }
+  .empty h1 { font-size: 26px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .empty p { color: var(--muted); margin: 0 0 24px; }
+  .examples { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; text-align: left; }
+  .example { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 12px 14px;
+             box-shadow: var(--shadow); text-align: left; }
+  .example:hover { border-color: var(--accent); }
+  .example .k { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+
+  .turn { margin: 18px 0; }
+  .user { display: flex; justify-content: flex-end; }
+  .user .bubble { background: var(--accent); color: var(--on-accent); border-radius: 16px 16px 4px 16px;
+                  padding: 9px 14px; max-width: 80%; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .bot { display: flex; gap: 12px; align-items: flex-start; }
+  .avatar { width: 30px; height: 30px; border-radius: 8px; background: var(--accent-soft); color: var(--accent);
+            display: grid; place-items: center; margin-top: 2px; }
+  .bot .body { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px;
+               padding: 14px 16px; box-shadow: var(--shadow); overflow-wrap: anywhere; }
+  .body p { margin: 0 0 10px; } .body p:last-child { margin-bottom: 0; }
+  .body h3, .body h4 { margin: 14px 0 6px; font-size: 15px; }
+  .body ul, .body ol { margin: 4px 0 10px; padding-left: 22px; }
+  .body code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg);
+               padding: 1px 5px; border-radius: 5px; }
+  .codeblock { position: relative; margin: 10px 0; }
+  .codeblock pre { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+                   padding: 12px 14px; overflow-x: auto; }
+  .codeblock pre code { background: none; padding: 0; }
+  .codeblock .copy { position: absolute; top: 6px; right: 6px; font-size: 12px; padding: 3px 8px; opacity: .85; }
+
+  /* ---------- citations ---------- */
+  .cite { display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; margin: 0 0 0 3px; padding: 0 7px 0 5px;
+          height: 20px; border-radius: 999px; font-size: 12px; font-weight: 550; line-height: 20px; text-decoration: none;
+          border: 1px solid transparent; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  .cite:hover { filter: brightness(.95); text-decoration: none; }
+  .k-doc { color: var(--doc); background: var(--doc-soft); }
+  .s-open { color: var(--open); background: var(--open-soft); }
+  .s-merged { color: var(--merged); background: var(--merged-soft); }
+  .s-closed { color: var(--closed); background: var(--closed-soft); }
+  .k-issue.s-closed { color: var(--merged); background: var(--merged-soft); } /* GitHub shows closed issues purple */
+  .live { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; text-transform: uppercase;
+          letter-spacing: .04em; opacity: .9; }
+  .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+                  animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  .sources { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .sources .title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .card { display: flex; gap: 10px; align-items: flex-start; padding: 9px 11px; border: 1px solid var(--line);
+          border-radius: 10px; background: var(--surface-2); text-decoration: none; color: var(--text); min-width: 0; }
+  .card:hover { border-color: var(--accent); }
+  .card .ico { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; }
+  .card .t { font-size: 13.5px; font-weight: 550; line-height: 1.35; overflow: hidden; display: -webkit-box;
+             -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .card .m { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ---------- progress ---------- */
+  .steps { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+  .steps li { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: var(--muted); }
+  .steps li.done { color: var(--text); }
+  .steps .tick { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center;
+                 background: var(--open-soft); color: var(--open); }
+  .steps .time { margin-left: auto; color: var(--faint); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%;
+             animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- approval ---------- */
+  .approval { margin-top: 12px; border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line)); background: var(--warn-soft);
+              border-radius: var(--radius); padding: 14px; }
+  .approval .head { display: flex; align-items: center; gap: 8px; font-weight: 650; color: var(--warn); }
+  .approval .target { display: flex; align-items: center; gap: 6px; margin: 6px 0 10px; font-size: 13px; color: var(--muted); }
+  .approval textarea { min-height: 140px; resize: vertical; background: var(--surface); }
+  .approval .foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .approval .hint { font-size: 12px; color: var(--muted); }
+  .outcome { margin-top: 12px; display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; font-size: 13.5px; }
+  .outcome.executed { background: var(--open-soft); color: var(--open); }
+  .outcome.rejected { background: var(--surface-2); color: var(--muted); }
+  .outcome.other { background: var(--warn-soft); color: var(--warn); }
+  .note { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- composer ---------- */
+  .composer { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px 16px;
+              background: linear-gradient(to top, var(--bg) 70%, transparent); }
+  .composer form { max-width: 880px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; background: var(--surface);
+                   border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 14px; box-shadow: var(--shadow); }
+  .composer textarea { border: 0; padding: 6px 0; resize: none; max-height: 180px; background: transparent; outline: none; }
+  .composer .meta { max-width: 880px; margin: 6px auto 0; font-size: 12px; color: var(--faint); display: flex; gap: 12px; }
+  .send { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; padding: 0; }
+
+  .toast { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); background: var(--closed); color: #fff;
+           padding: 9px 14px; border-radius: 10px; font-size: 13.5px; box-shadow: var(--shadow); max-width: calc(100vw - 32px); }
+  .hidden { display: none !important; }
+  @media (max-width: 600px) { .user .bubble { max-width: 92%; } .avatar { display: none; } .repo-pill, .new-label { display: none; }
+                              .topbar .inner { gap: 8px; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5h7l3 3v8a.5.5 0 0 1-.5.5h-9.5a.5.5 0 0 1-.5-.5v-10.5a.5.5 0 0 1 .5-.5z"/><path d="M5.5 8h5M5.5 10.5h3"/></svg></span>
+      Dev Docs Copilot
+    </div>
+    <span class="pill repo-pill" id="repo-pill" title="Indexed repository">—</span>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="new-thread" type="button" title="Start a new conversation">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      <span class="new-label">New chat</span>
+    </button>
+    <button class="btn" id="key-btn" type="button" aria-haspopup="true" aria-expanded="false">
+      <span class="dot" id="key-dot"></span><span id="key-label">Set API key</span>
+    </button>
+  </div>
+  <div class="popover hidden" id="key-popover" role="dialog" aria-label="API key">
+    <label for="api-key">API key (stored only in this browser)</label>
+    <div class="row">
+      <input id="api-key" type="password" autocomplete="off" placeholder="Paste your key">
+      <button class="btn primary" id="key-save" type="button">Save</button>
+    </div>
+    <div class="note" id="key-status"></div>
+  </div>
+</header>
+
+<main>
+  <section class="empty" id="empty">
+    <h1>Ask about <span id="empty-repo">the project</span></h1>
+    <p>Answers come from its docs, issues and pull requests, plus live GitHub data, and every claim is cited.</p>
+    <div class="examples" id="examples"></div>
+  </section>
+  <div id="conversation" aria-live="polite"></div>
+</main>
+
+<div class="composer">
+  <form id="ask-form">
+    <textarea id="question" rows="1" maxlength="2000" placeholder="Ask anything… e.g. “Is PR #3564 merged?”"
+              aria-label="Question"></textarea>
+    <button class="btn primary send" id="ask" type="submit" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>
+    </button>
+  </form>
+  <div class="meta"><span>Enter to send · Shift+Enter for a new line</span><span id="thread-label"></span></div>
+</div>
+<div class="toast hidden" id="toast" role="alert"></div>
+
+<script>
+const API = "/api/v1";
+const $ = (id) => document.getElementById(id);
+const state = { threadId: null, busy: false, info: null };
+
+const EXAMPLES = [
+  { kind: "doc", q: "How do I run code when the application starts up and shuts down?" },
+  { kind: "pr", q: "Is PR #3564 merged, and who opened it?" },
+  { kind: "issue", q: "Are there open issues about multipart upload limits?" },
+  { kind: "action", q: "Comment on issue #1 with a short tip about serving static files." },
+];
+
+// ---------- icons (16px, currentColor) ----------
+const ICON = {
+  doc: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 1.75h5.5l3.5 3.5v8.5a.5.5 0 0 1-.5.5h-8.5a.5.5 0 0 1-.5-.5v-11.5a.5.5 0 0 1 .5-.5z"/><path d="M9 1.75v3.5h3.5"/></svg>',
+  issue: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none"/></svg>',
+  issueClosed: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.25"/><path d="M5.5 8.2 7.2 9.9 10.6 6.3"/></svg>',
+  pr: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="3.5" r="1.6"/><circle cx="4" cy="12.5" r="1.6"/><circle cx="12" cy="12.5" r="1.6"/><path d="M4 5.1v5.8M12 10.9V6.5a2 2 0 0 0-2-2H7.3M8.8 3 7.3 4.5 8.8 6"/></svg>',
+  merged: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="3.5" r="1.6"/><circle cx="4" cy="12.5" r="1.6"/><circle cx="12" cy="8.5" r="1.6"/><path d="M4 5.1v5.8M4.4 5.2c.6 2 2.6 3.3 6 3.3"/></svg>',
+  prClosed: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="3.5" r="1.6"/><circle cx="4" cy="12.5" r="1.6"/><circle cx="12" cy="12.5" r="1.6"/><path d="M4 5.1v5.8M12 10.9V8.2M10.4 3.2l3.2 3.2M13.6 3.2l-3.2 3.2"/></svg>',
+  check: '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>',
+  bot: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="11" height="8.5" rx="2.5"/><path d="M8 2v2.5M6 8.5h.01M10 8.5h.01"/></svg>',
+  pause: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="2.6" height="10" rx="1"/><rect x="9.4" y="3" width="2.6" height="10" rx="1"/></svg>',
+  repo: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13V3a1.5 1.5 0 0 1 1.5-1.5h8v10H4.5A1.5 1.5 0 0 0 3 13zm0 0a1.5 1.5 0 0 0 1.5 1.5h8"/></svg>',
+  link: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4M13.5 2.5 7 9M12 9.5v3.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5H7"/></svg>',
+  sparkle: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.6 3.6l2 2M10.4 10.4l2 2M12.4 3.6l-2 2M5.6 10.4l-2 2"/></svg>',
+};
+
+// ---------- helpers ----------
+const store = {  // per-viewer convenience only; the server is the source of truth
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function headers() {
+  return { "Content-Type": "application/json", "X-API-Key": ($("api-key").value || "").trim() };
+}
+async function api(path, options = {}) {
+  const res = await fetch(API + path, { ...options, headers: headers() });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.add("hidden"), 6000);
+}
+
+// Source links come from our index/GitHub, but never trust them blindly: only github.com pages.
+const safeUrl = (u) => (typeof u === "string" && /^https:\/\/github\.com\//.test(u) ? u : null);
+
+// ---------- source classification ----------
+function sourceKind(s) {
+  const type = s.doc_type.replace("live_", "");
+  const live = s.doc_type.startsWith("live_");
+  if (type === "doc") return { cls: "k-doc", icon: ICON.doc, label: s.title || "doc", noun: "Docs page", live };
+  const stateCls = s.state === "merged" ? "s-merged" : s.state === "open" ? "s-open" : "s-closed";
+  if (type === "pr") {
+    const icon = s.state === "merged" ? ICON.merged : s.state === "open" ? ICON.pr : ICON.prClosed;
+    return { cls: `k-pr ${stateCls}`, icon, label: `#${s.number}`, noun: `Pull request #${s.number}`, live };
+  }
+  const icon = s.state === "open" ? ICON.issue : ICON.issueClosed;
+  return { cls: `k-issue ${stateCls}`, icon, label: `#${s.number}`, noun: `Issue #${s.number}`, live };
+}
+function chip(s) {
+  const k = sourceKind(s);
+  const tip = [k.noun, s.state, s.author && `by ${s.author}`, k.live && "live from GitHub", s.title].filter(Boolean).join(" · ");
+  const url = safeUrl(s.url);
+  const inner = `${k.icon}<span>${esc(k.label)}</span>${k.live ? '<span class="live">live</span>' : ""}`;
+  return url ? `<a class="cite ${k.cls}" href="${esc(url)}" target="_blank" rel="noopener" title="${esc(tip)}">${inner}</a>`
+             : `<span class="cite ${k.cls}" title="${esc(tip)}">${inner}</span>`;
+}
+
+// ---------- markdown-lite with citation chips ----------
+function inline(text, byId) {
+  // Order matters: citations first (on plain escaped text), then links whose URL can't contain
+  // [ or ] - so "[x](http://a/[5])" can't smuggle a chip's markup into an href.
+  let last = null;
+  let html = esc(text).replace(/\s*\[(\d+(?:,\s*\d+)*)\]/g, (m, ids) => {
+    // [12] or [12, 15] -> chips. Unknown ids are dropped (they were never shown as sources).
+    const chips = ids.split(/,\s*/).map((id) => byId[id]).filter(Boolean)
+      .filter((s) => { const dup = last === s.url; last = s.url; return !dup; }).map(chip);
+    return chips.length ? " " + chips.join("") : "";
+  });
+  return html
+    .replace(/`([^`\n<]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*\n<]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[([^\]\n<]+)\]\((https?:\/\/[^)\s<>\[\]"']+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function renderMarkdown(text, sources) {
+  const byId = Object.fromEntries((sources || []).map((s) => [String(s.chunk_id), s]));
+  const out = [];
+  const parts = String(text || "").split(/```(\w*)\n?([\s\S]*?)```/g);
+  for (let i = 0; i < parts.length; i += 3) {
+    out.push(blocks(parts[i], byId));
+    if (i + 2 < parts.length) {
+      out.push(`<div class="codeblock"><button class="btn copy" type="button">Copy</button>` +
+               `<pre><code>${esc(parts[i + 2].replace(/\n$/, ""))}</code></pre></div>`);
+    }
+  }
+  return out.join("");
+}
+function blocks(text, byId) {
+  const html = [];
+  let list = null;
+  const flush = () => { if (list) { html.push(`<${list.tag}>${list.items.join("")}</${list.tag}>`); list = null; } };
+  for (const para of text.split(/\n{2,}/)) {
+    for (const line of para.split("\n")) {
+      const bullet = line.match(/^\s*[-*]\s+(.*)/), num = line.match(/^\s*\d+[.)]\s+(.*)/), head = line.match(/^#{1,4}\s+(.*)/);
+      if (bullet || num) {
+        const tag = bullet ? "ul" : "ol";
+        if (!list || list.tag !== tag) { flush(); list = { tag, items: [] }; }
+        list.items.push(`<li>${inline((bullet || num)[1], byId)}</li>`);
+      } else if (head) { flush(); html.push(`<h4>${inline(head[1], byId)}</h4>`); }
+      else if (line.trim()) { flush(); html.push(`<p>${inline(line, byId)}</p>`); }
+    }
+    flush();
+  }
+  return html.join("");
+}
+function sourceCards(sources) {
+  if (!sources || !sources.length) return "";
+  const seen = new Map();
+  for (const s of sources) if (!seen.has(s.url)) seen.set(s.url, s);  // one card per page/issue/PR
+  const cards = [...seen.values()].map((s) => {
+    const k = sourceKind(s);
+    const meta = [k.noun, s.state, s.author, k.live && "live"].filter(Boolean).join(" · ");
+    const url = safeUrl(s.url);
+    return `<a class="card" ${url ? `href="${esc(url)}" target="_blank" rel="noopener"` : ""}>` +
+           `<span class="ico cite ${k.cls}" style="padding:0;justify-content:center">${k.icon}</span>` +
+           `<span style="min-width:0"><div class="t">${esc(s.title || k.label)}</div><div class="m">${esc(meta)}</div></span></a>`;
+  }).join("");
+  return `<div class="sources"><div class="title">Sources</div><div class="cards">${cards}</div></div>`;
+}
+function outcome(action) {
+  if (!action) return "";
+  if (action.status === "executed") {
+    return `<div class="outcome executed">${ICON.check} Posted to GitHub` +
+           (safeUrl(action.url) ? ` · <a href="${esc(action.url)}" target="_blank" rel="noopener">view comment ${ICON.link}</a>` : "") + `</div>`;
+  }
+  if (action.status === "rejected") return `<div class="outcome rejected">Not posted: rejected by reviewer</div>`;
+  return `<div class="outcome other">Not posted (${esc(action.status)}): ${esc(action.reason || "")}</div>`;
+}
+
+// ---------- conversation rendering ----------
+function botTurn(inner) {
+  return `<div class="turn bot"><div class="avatar" aria-hidden="true">${ICON.bot}</div><div class="body">${inner}</div></div>`;
+}
+function userTurn(text) {
+  return `<div class="turn user"><div class="bubble">${esc(text)}</div></div>`;
+}
+function answerHtml(text, sources, action) {
+  return renderMarkdown(text, sources) + outcome(action) + sourceCards(sources);
+}
+function render(snapshot) {
+  const msgs = snapshot.messages || [];
+  let html = msgs.map((m) => m.role === "user" ? userTurn(m.content)
+    : botTurn(answerHtml(m.text ?? m.content, m.sources, m.action))).join("");
+  if (snapshot.status === "awaiting_approval" && snapshot.answer) {
+    html += botTurn(answerHtml(snapshot.answer.text, snapshot.answer.sources) + approvalCard(snapshot.pending_action));
+  }
+  if (snapshot.status === "failed") {
+    html += botTurn(`<div class="outcome other">${esc(snapshot.last_error || "This run failed.")}</div>` +
+      `<div class="foot" style="margin-top:10px"><button class="btn" id="retry" type="button">Retry from where it stopped</button></div>`);
+  }
+  $("conversation").innerHTML = html;
+  $("empty").classList.toggle("hidden", msgs.length > 0 || snapshot.status === "awaiting_approval");
+  scrollDown();
+}
+function approvalCard(p) {
+  if (!p) return "";
+  const target = p.issue_number ? `comment on issue #${p.issue_number}` : "new issue";
+  const canApprove = state.info?.role === "maintainer";
+  return `<div class="approval" id="approval">
+    <div class="head">${ICON.pause} Approval needed before posting</div>
+    <div class="target">${ICON.repo} <strong>${esc(p.repo)}</strong> · ${esc(target)}${p.title ? ` · “${esc(p.title)}”` : ""}</div>
+    ${p.issue_number && state.info?.repo ? `<div class="hint" style="margin:-4px 0 8px">Note: #${p.issue_number} is the sandbox repo's issue, not ${esc(state.info.repo)}#${p.issue_number}.</div>` : ""}
+    <textarea id="action-body" aria-label="Draft (you can edit it)">${esc(p.body)}</textarea>
+    <div class="foot">
+      <button class="btn success" id="approve" type="button" ${canApprove ? "" : "disabled"}>Approve &amp; post</button>
+      <button class="btn" id="reject" type="button" ${canApprove ? "" : "disabled"}>Reject</button>
+      <span class="hint">${canApprove ? "Edit freely. It will be posted exactly once." : "Only maintainer keys can approve."}</span>
+    </div></div>`;
+}
+function scrollDown() { window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); }
+
+// ---------- live progress ----------
+function progressTurn() {
+  const el = document.createElement("div");
+  el.innerHTML = botTurn(`<ul class="steps" id="steps"><li><span class="spinner"></span> Starting…<span class="time" id="elapsed">0.0s</span></li></ul>`);
+  $("conversation").appendChild(el.firstChild);
+  $("empty").classList.add("hidden");
+  const t0 = performance.now();
+  const timer = setInterval(() => { const e = $("elapsed"); if (e) e.textContent = ((performance.now() - t0) / 1000).toFixed(1) + "s"; }, 100);
+  const done = [];
+  return {
+    step(label) {
+      done.push({ label, at: ((performance.now() - t0) / 1000).toFixed(1) });
+      $("steps").innerHTML = done.map((d) => `<li class="done"><span class="tick">${ICON.check}</span>${esc(d.label)}<span class="time">${d.at}s</span></li>`).join("") +
+        `<li><span class="spinner"></span> Working…<span class="time" id="elapsed"></span></li>`;
+      scrollDown();
+    },
+    stop() { clearInterval(timer); },
+  };
+}
+// EventSource can't send the X-API-Key header, so the SSE stream is read with fetch().
+async function followEvents(progress) {
+  const res = await fetch(`${API}/threads/${state.threadId}/events`, { headers: headers() });
+  if (!res.ok) throw new Error(`Could not follow progress (${res.status})`);
+  const reader = res.body.getReader(), decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    buffer += decoder.decode(value, { stream: true });
+    let cut;
+    while ((cut = buffer.indexOf("\n\n")) >= 0) {
+      const line = buffer.slice(0, cut).trim();
+      buffer = buffer.slice(cut + 2);
+      if (!line.startsWith("data: ")) continue;
+      const event = JSON.parse(line.slice(6));
+      if (event.type === "status") return;
+      if (event.node !== "respond") progress.step(event.label);
+    }
+  }
+}
+
+// ---------- actions ----------
+async function refresh() {
+  render(await api(`/threads/${state.threadId}`));
+}
+async function run(start) {
+  if (state.busy) return;
+  state.busy = true;
+  $("ask").disabled = true;
+  const progress = progressTurn();
+  try {
+    await start();
+    await followEvents(progress);
+  } catch (err) {
+    toast(err.status === 401 ? "Your API key was rejected. Set it with the key button." : err.message);
+  } finally {
+    progress.stop();
+    state.busy = false;
+    $("ask").disabled = false;
+    if (state.threadId) await refresh().catch((e) => toast(e.message));
+  }
+}
+async function ensureThread() {
+  if (state.threadId) return;
+  state.threadId = (await api("/threads", { method: "POST" })).thread_id;
+  history.replaceState(null, "", `#thread=${state.threadId}`);
+  $("thread-label").textContent = `thread ${state.threadId}`;
+}
+async function ask(question) {
+  question = question.trim();
+  if (!question || state.busy) return;
+  try { await ensureThread(); } catch (err) { toast(err.status === 401 ? "Set a valid API key first." : err.message); openKey(); return; }
+  $("conversation").insertAdjacentHTML("beforeend", userTurn(question));
+  $("question").value = "";
+  autosize();
+  await run(() => api(`/threads/${state.threadId}/messages`, { method: "POST", body: JSON.stringify({ question }) }));
+}
+async function decide(approved) {
+  const body = $("action-body")?.value;
+  $("approval")?.remove();
+  await run(() => api(`/threads/${state.threadId}/approve`, { method: "POST", body: JSON.stringify({ approved, body }) }));
+}
+
+// ---------- key / info ----------
+function openKey(open = true) {
+  $("key-popover").classList.toggle("hidden", !open);
+  $("key-btn").setAttribute("aria-expanded", String(open));
+  if (open) $("api-key").focus();
+}
+async function loadInfo() {
+  const dot = $("key-dot"), label = $("key-label");
+  if (!$("api-key").value.trim()) { dot.className = "dot"; label.textContent = "Set API key"; return false; }
+  try {
+    state.info = await api("/info");
+    dot.className = "dot ok";
+    label.textContent = state.info.role;
+    $("key-status").textContent = `Connected as ${state.info.role}.`;
+    $("repo-pill").innerHTML = `${ICON.repo} ${esc(state.info.repo)}`;
+    $("empty-repo").textContent = state.info.repo;
+    return true;
+  } catch (err) {
+    state.info = null;
+    dot.className = "dot bad";
+    label.textContent = "Key rejected";
+    $("key-status").textContent = err.status === 401 ? "That key was rejected." : err.message;
+    return false;
+  }
+}
+
+// ---------- wiring ----------
+function autosize() { const q = $("question"); q.style.height = "auto"; q.style.height = Math.min(q.scrollHeight, 180) + "px"; }
+$("question").addEventListener("input", autosize);
+$("question").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ask($("question").value); }
+});
+$("ask-form").addEventListener("submit", (e) => { e.preventDefault(); ask($("question").value); });
+$("examples").innerHTML = EXAMPLES.map((x, i) => {
+  const k = { doc: ["Docs", ICON.doc], pr: ["Live GitHub", ICON.merged], issue: ["Issues", ICON.issue], action: ["Action (needs approval)", ICON.sparkle] }[x.kind];
+  return `<button class="example" type="button" data-i="${i}"><div class="k">${k[1]} ${k[0]}</div>${esc(x.q)}</button>`;
+}).join("");
+$("examples").addEventListener("click", (e) => { const b = e.target.closest(".example"); if (b) ask(EXAMPLES[b.dataset.i].q); });
+$("conversation").addEventListener("click", (e) => {
+  if (e.target.id === "retry") run(() => api(`/threads/${state.threadId}/retry`, { method: "POST" }));
+  else if (e.target.id === "approve") decide(true);
+  else if (e.target.id === "reject") decide(false);
+  else if (e.target.classList.contains("copy")) {
+    navigator.clipboard?.writeText(e.target.nextElementSibling.innerText).then(() => {
+      e.target.textContent = "Copied"; setTimeout(() => (e.target.textContent = "Copy"), 1200);
+    });
+  }
+});
+$("key-btn").addEventListener("click", () => openKey($("key-popover").classList.contains("hidden")));
+$("key-save").addEventListener("click", async () => {
+  store.set("copilot-api-key", $("api-key").value.trim());
+  if (await loadInfo()) openKey(false);
+});
+$("api-key").addEventListener("keydown", (e) => { if (e.key === "Enter") $("key-save").click(); });
+$("new-thread").addEventListener("click", () => {
+  state.threadId = null;
+  history.replaceState(null, "", location.pathname);
+  $("thread-label").textContent = "";
+  $("conversation").innerHTML = "";
+  $("empty").classList.remove("hidden");
+  $("question").focus();
+});
+
+(async function init() {
+  $("api-key").value = store.get("copilot-api-key") || "";
+  const ok = await loadInfo();
+  if (!ok) openKey();
+  const m = location.hash.match(/thread=([A-Za-z0-9_-]{1,64})/);
+  if (m && ok) {
+    state.threadId = m[1];
+    $("thread-label").textContent = `thread ${state.threadId}`;
+    await refresh().catch((e) => toast(e.message));
+  }
+})();
+</script>
+</body>
+</html>

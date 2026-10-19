@@ -9,7 +9,7 @@ from copilot.db.connection import apply_schema, connect
 ADMIN_URL = os.environ.get("COPILOT_TEST_ADMIN_URL", "postgresql://copilot:copilot@localhost:5433/copilot")
 TEST_DB = "copilot_test"
 TEST_URL = ADMIN_URL.rsplit("/", 1)[0] + f"/{TEST_DB}"
-TABLES = "documents, chunks, sync_state, llm_cache, llm_usage"
+TABLES = "documents, chunks, sync_state, llm_cache, llm_usage, thread_metadata, actions"
 
 
 @pytest.fixture(scope="session")

@@ -49,6 +49,45 @@ CREATE TABLE IF NOT EXISTS llm_cache (
     created_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- Run status per conversation thread (the conversation itself lives in LangGraph's checkpoints).
+-- lease_until lets a restarted server find runs that died mid-way, and claim each exactly once.
+CREATE TABLE IF NOT EXISTS thread_metadata (
+    thread_id    text PRIMARY KEY,
+    status       text NOT NULL CHECK (status IN ('idle', 'running', 'awaiting_approval', 'done', 'failed')),
+    lease_until  timestamptz,
+    last_error   text,
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    updated_at   timestamptz NOT NULL DEFAULT now()
+);
+
+-- Added after the plan-3 review (ALTER so existing databases upgrade in place):
+--   lease_owner:   fencing token of the worker holding the lease; status writes require it
+--   pending_input: the question being answered, so recovery can replay one LangGraph never saw
+--   owner:         fingerprint of the API key that created the thread (readers see only their own)
+ALTER TABLE thread_metadata ADD COLUMN IF NOT EXISTS lease_owner text;
+ALTER TABLE thread_metadata ADD COLUMN IF NOT EXISTS pending_input jsonb;
+ALTER TABLE thread_metadata ADD COLUMN IF NOT EXISTS owner text;
+
+-- Every approved/rejected GitHub action. The primary key makes execution idempotent:
+-- a second approval of the same action finds the row and returns the stored result.
+CREATE TABLE IF NOT EXISTS actions (
+    idempotency_key  text PRIMARY KEY,
+    thread_id        text NOT NULL,
+    kind             text NOT NULL,
+    target_repo      text NOT NULL,
+    payload          jsonb NOT NULL,
+    -- 'pending' = claimed by the executor before calling GitHub, so a concurrent approval can't also run it
+    status           text NOT NULL CHECK (status IN ('pending', 'executed', 'rejected', 'failed')),
+    result           jsonb,
+    decided_by       text,
+    decided_at       timestamptz NOT NULL DEFAULT now()
+);
+
+-- 'unknown' = the GitHub call's outcome is uncertain (timeout/crash mid-call); reconciled later.
+ALTER TABLE actions DROP CONSTRAINT IF EXISTS actions_status_check;
+ALTER TABLE actions ADD CONSTRAINT actions_status_check
+    CHECK (status IN ('pending', 'executed', 'rejected', 'failed', 'unknown'));
+
 -- Every OpenAI call (and cache hit) — the source of truth for the budget ceiling.
 CREATE TABLE IF NOT EXISTS llm_usage (
     id             bigserial PRIMARY KEY,

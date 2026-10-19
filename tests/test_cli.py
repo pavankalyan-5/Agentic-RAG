@@ -13,6 +13,9 @@ def cli_env(seeded_db, settings, monkeypatch):
     monkeypatch.setenv("COPILOT_DATABASE_URL", settings.database_url)
     monkeypatch.setenv("COPILOT_BUDGET_USD", "8")
     monkeypatch.setattr(cli, "build_embedder", lambda conn, s: FakeEmbedder())
+    # Never start real Docker/MCP from tests (Settings() would read real tokens from .env).
+    from contextlib import nullcontext
+    monkeypatch.setattr(cli, "build_tools", lambda s, write=False: nullcontext(None))
     get_settings.cache_clear()
     yield seeded_db
     get_settings.cache_clear()
@@ -57,6 +60,50 @@ def _cite_first(messages):
 
     first = int(re.search(r'<chunk id="(\d+)"', messages[1]["content"]).group(1))
     return AnswerDraft(answer=f"It times out [{first}].", cited_chunk_ids=[first], insufficient_context=False)
+
+
+@pytest.fixture
+def action_env(cli_env, monkeypatch):
+    from contextlib import nullcontext
+
+    from copilot.agent.schemas import ActionDraft, Plan, RequestedAction
+    from copilot.retrieval.agentic import SubQuery
+    from fakes import FakeChat, FakeReranker, FakeTools
+
+    monkeypatch.setenv("COPILOT_SANDBOX_REPO", "me/sandbox")
+    get_settings.cache_clear()
+    plan = Plan(needs_search=True, sub_queries=[SubQuery(query="ERR_TIMEOUT client")],
+                requested_action=RequestedAction(kind="comment_on_issue", issue_number=1, instructions="x"))
+    chat = FakeChat({"plan": [plan], "answer": [_cite_first], "action": [ActionDraft(title=None, body="hello")]})
+    writes = FakeTools()
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: chat)
+    monkeypatch.setattr(cli, "build_reranker", lambda s: FakeReranker())
+    monkeypatch.setattr(cli, "build_tools", lambda s, write=False: nullcontext(writes if write else FakeTools()))
+    return writes
+
+
+def test_ask_pauses_for_approval_then_approve_executes_once(action_env):
+    r = runner.invoke(cli.app, ["ask", "Comment on #1 about timeouts", "--thread", "act1"])
+    assert r.exit_code == 0, r.output
+    assert "Awaiting approval" in r.output and "me/sandbox" in r.output and "hello" in r.output
+    assert action_env.calls == []
+    r = runner.invoke(cli.app, ["ask", "--thread", "act1", "--approve"])
+    assert r.exit_code == 0, r.output
+    assert "Posted to GitHub" in r.output and len(action_env.calls) == 1
+    r = runner.invoke(cli.app, ["ask", "--thread", "act1", "--approve"])
+    assert r.exit_code == 1 and "Nothing is waiting for approval" in r.output
+    assert len(action_env.calls) == 1
+
+
+def test_ask_reject(action_env):
+    runner.invoke(cli.app, ["ask", "Comment on #1", "--thread", "act2"])
+    r = runner.invoke(cli.app, ["ask", "--thread", "act2", "--reject"])
+    assert r.exit_code == 0 and "Not posted" in r.output and action_env.calls == []
+
+
+def test_ask_needs_question_or_decision(cli_env):
+    r = runner.invoke(cli.app, ["ask"])
+    assert r.exit_code != 0
 
 
 @pytest.fixture

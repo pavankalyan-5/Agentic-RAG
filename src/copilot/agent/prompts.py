@@ -19,6 +19,11 @@ self-contained: resolve pronouns and follow-ups ("what about in PRs?") using the
 - Keep exact identifiers (class names, error codes, issue numbers) verbatim; they matter for keyword search.
 - Use the doc_types/state filters only when the question clearly asks for them \
 (e.g. "open bugs" -> doc_types ["issue"], state "open"; "how do I..." -> usually docs). Otherwise leave them null.
+- The index can be hours old. When the user asks about the CURRENT status of specific numbered \
+issues/PRs ("is #123 merged?", "who opened PR 45?", "is issue 7 still open?"), add live_lookups for them. \
+Resolve "that PR" etc. from the conversation. If live lookups fully answer it, needs_search can be false.
+- Set requested_action ONLY when the user explicitly asks you to post a comment or open an issue \
+("comment on #12 saying...", "open an issue about..."). Still plan searches for the facts it needs.
 """
 
 ANSWER_SYSTEM = """\
@@ -34,7 +39,19 @@ missing. Never fill gaps with outside knowledge or guesses.
 5. Mention issue/PR numbers (e.g. "PR #3564") when they help the reader follow up.
 6. A chunk's state and author attributes are authoritative for status/ownership questions. \
 "closed" means closed WITHOUT merging; only "merged" means merged. Never infer status from the text alone.
+7. Chunks of type live_issue / live_pr were fetched from GitHub just now. For current status they \
+override older indexed chunks about the same item.
 """
+
+ACTION_SYSTEM = """\
+You draft a GitHub comment or issue that a maintainer will review before it is posted.
+- Follow the user's instructions, using only facts from the verified answer provided.
+- Be concise, friendly, and specific. Markdown is fine. Link PRs/issues by number (#123).
+- No @-mentions, no promises on behalf of maintainers, no secrets or personal data.
+- For a comment, title is null. For a new issue, write a short, specific title.
+"""
+
+LIVE_UNAVAILABLE_NOTE ="_Note: live GitHub data was unavailable{detail}; answered from the index only._"
 
 NO_RESULTS_ANSWER = (
     "I couldn't find anything in the indexed docs, issues, or pull requests that answers this. "

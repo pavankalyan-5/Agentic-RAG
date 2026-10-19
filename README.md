@@ -36,7 +36,11 @@ flowchart LR
     CH --> HS
     HS --> A[LangGraph agent<br/>plan → retrieve + rerank → answer → verify citations]
     A --> CK[(LangGraph checkpoints<br/>in Postgres)]
-    A --> MCP[GitHub MCP tools<br/><i>planned</i>]
+    A --> MCP[GitHub MCP server<br/>read-only lookups]
+    A --> HITL{{human approval}}
+    HITL --> W[GitHub MCP server<br/>sandbox-only writes]
+    API[FastAPI + chat page<br/>SSE progress] --> R[Thread runner<br/>leases + auto-resume]
+    R --> A
 ```
 
 **Everything lives in one PostgreSQL database**: documents, chunks with vector embeddings (pgvector), a BM25 keyword index (ParadeDB `pg_search`), sync checkpoints, and an LLM cost ledger. One database means fewer moving parts to run and keep consistent.
@@ -82,11 +86,54 @@ uv run copilot ask "Has that change been merged, and who made it?" --thread <id>
 | Notable fix | The model claimed a closed PR was "merged" because it never saw PR state. State and author now go into the context, and the answer is correct. |
 | Known open issue | Prompting doesn't remove every status error (one "closed but merged" contradiction). Claim-level verification comes in plan 5. |
 
+## Live tools, approvals, and the service
+
+```
+plan ─► retrieve ─► live_lookup ─► synthesize ─► verify ─┬─► respond
+                    (GitHub MCP,                          └─► propose_action ─► approve ⏸ ─► execute_action ─► respond
+                     read-only)                               (drafts comment)  (a human)    (sandbox repo, once)
+```
+
+- **Live lookups via MCP:** "Is #3564 merged?" is answered from GitHub *now*, through GitHub's official MCP server. Live results are cited like any chunk. If Docker or GitHub is down, the agent answers from the index and says so.
+- **Human-in-the-loop actions:** "Comment on #1 saying…" drafts the comment, then the graph **pauses** with LangGraph `interrupt()`. The pause is checkpointed, so it survives restarts. A maintainer edits, approves, or rejects it in the chat page.
+- **Durable runs:** turns run in the background under a **lease** that a heartbeat renews while a run is in progress. Each lease carries a **fencing token**, so a worker that lost its lease (it stalled, or another process took over) can't overwrite the new owner's results. A periodic check claims expired leases (one atomic `UPDATE … RETURNING`) and continues from the last checkpoint. The question is saved with the claim, so even a question LangGraph never saw is replayed. Failed runs can be **retried** from where they stopped. Demo: `kill -9` mid-answer, and the run finishes in a new process without redoing the planner.
+- **At-most-once actions with reconciliation:** GitHub's comment API has no idempotency keys, so exactly-once is impossible. We **never post twice**. Each post carries a hidden marker. If a crash leaves an outcome uncertain (`pending`/`unknown`), the agent searches the issue for its marker: found means executed, verified absent means it's safe to post.
+
+**Write safety: five independent layers**
+
+| Layer | Stops |
+|---|---|
+| Read client runs in GitHub MCP **read-only mode** | the question-answering path writing anything |
+| Separate write token, **scoped to one sandbox repo** | writes anywhere else, even if every other check failed |
+| **The model never chooses the repo**; code checks `repo == sandbox` before every write | prompt injection redirecting an action |
+| Approval needs a **maintainer** API key (checked in the API *and* the tool layer) | readers, or the model alone, triggering writes |
+| **Idempotency key** claimed in Postgres before calling GitHub, plus marker-based reconciliation | double clicks, retries, races, and crashes mid-post posting twice |
+
+```bash
+# .env: COPILOT_SANDBOX_REPO, COPILOT_GITHUB_WRITE_TOKEN (sandbox-only, Issues: R/W),
+#       COPILOT_API_KEYS='{"<random-key>": "maintainer"}'
+uv run copilot serve                       # http://127.0.0.1:8000: chat page, progress, approve/reject
+uv run copilot ask "Comment on #1 summarizing lifespan" --thread demo
+uv run copilot ask --thread demo --approve # or --reject
+```
+
+**Demos on real services** ([write-up](docs/results/2026-10-19-plan3-demo.md)):
+
+| Demo | Result |
+|---|---|
+| Live lookup: "Is PR #3564 merged, and who opened it?" | "closed but not merged, opened by Kludex", cited to the live PR |
+| Approve once | Sandbox issue went from 0 to 1 comment; the second approve returned `409`; one row in `actions` |
+| `kill -9` mid-answer | Resumed by the periodic recovery check, finished with a cited answer; the planner was not re-run |
+
+Running against real services found two bugs the fakes hid:
+- GitHub MCP returns `{"id", "url"}`, not `html_url`.
+- After a *quick* restart, a crashed run's lease hadn't expired at startup, so startup-only recovery left it stuck. A periodic recovery loop fixed it.
+
 ## Roadmap
 
 - [x] **Plan 1: Foundation.** Storage, ingestion, PII redaction, chunking, hybrid search, CLI, first real index
 - [x] **Plan 2: Agent.** LangGraph planner (query decomposition), cross-encoder reranking, Postgres checkpointing, retries, cited answers with self-correction
-- [ ] **Plan 3: Tools and human-in-the-loop.** GitHub MCP tools, approval-gated write actions, FastAPI and a chat UI
+- [x] **Plan 3: Tools and human-in-the-loop.** GitHub MCP tools (read-only lookups plus sandbox-only writes), approval-gated actions executed exactly once, FastAPI with SSE progress and a chat page, lease-based crash recovery
 - [ ] **Plan 4: Observability and evals.** OpenTelemetry/OpenInference traces in Arize Phoenix, cost and latency per request, DeepEval golden set, GitHub Actions quality gate, retrieval experiments
 - [ ] **Plan 5: Guardrails.** Prompt-injection detection (including in retrieved content), citation verification, role-based action authorization
 
@@ -94,8 +141,8 @@ Design document: [`docs/superpowers/specs/2026-10-18-dev-docs-copilot-design.md`
 
 ## Tech stack
 
-Python 3.12 · uv · LangGraph (+ Postgres checkpointer) · PostgreSQL 18 (ParadeDB: pgvector + pg_search) · psycopg 3 · OpenAI (`text-embedding-3-small`, `gpt-4.1-nano`, `gpt-4.1-mini`, structured outputs) · fastembed cross-encoder (ONNX) · Presidio + spaCy · tiktoken · httpx · pydantic · Typer · pytest + respx · Docker Compose
-*Planned:* MCP · FastAPI · OpenTelemetry · Arize Phoenix · DeepEval · GitHub Actions
+Python 3.12 · uv · LangGraph (+ Postgres checkpointer) · PostgreSQL 18 (ParadeDB: pgvector + pg_search) · psycopg 3 · OpenAI (`text-embedding-3-small`, `gpt-4.1-nano`, `gpt-4.1-mini`, structured outputs) · fastembed cross-encoder (ONNX) · MCP (Python SDK 2.3 + GitHub's MCP server in Docker) · FastAPI + uvicorn (SSE) · anyio · Presidio + spaCy · tiktoken · httpx · pydantic · Typer · pytest + respx · Docker Compose
+*Planned:* OpenTelemetry · Arize Phoenix · DeepEval · GitHub Actions
 
 ## Getting started
 

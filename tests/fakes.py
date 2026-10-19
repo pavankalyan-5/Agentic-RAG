@@ -57,6 +57,49 @@ class FakeOpenAI:
         )
 
 
+class FakeTools:
+    """ToolClient stand-in mirroring GitHub MCP shapes. Even PR numbers are merged. fail=True -> ToolError."""
+
+    def __init__(self, fail: bool = False, missing: set[int] = frozenset(), write_error: Exception | None = None):
+        self.fail, self.missing, self.write_error = fail, set(missing), write_error
+        self.calls: list[tuple[str, dict]] = []
+        self.comments: dict[int, list[dict]] = {}  # issue -> comments posted (read back by get_comments)
+
+    def tool_names(self) -> set[str]:
+        return {"issue_read", "pull_request_read", "add_issue_comment", "issue_write"}
+
+    def call(self, name: str, arguments: dict):
+        from copilot.tools.mcp_client import ToolError
+
+        self.calls.append((name, arguments))
+        if self.fail:
+            raise ToolError("tool server unavailable")
+        if self.write_error and name in ("add_issue_comment", "issue_write"):
+            raise self.write_error
+        if name == "issue_read" and arguments.get("method") == "get_comments":
+            return list(self.comments.get(arguments["issue_number"], []))
+        number = arguments.get("pullNumber") or arguments.get("issue_number")
+        if number in self.missing:
+            raise ToolError(f"{name} returned an error: not found")
+        owner, repo = arguments["owner"], arguments["repo"]
+        if name == "pull_request_read":
+            merged = number % 2 == 0
+            return {"number": number, "title": f"PR {number}", "state": "closed", "merged": merged,
+                    "merged_at": "2026-10-10T00:00:00Z" if merged else None,
+                    "html_url": f"https://github.com/{owner}/{repo}/pull/{number}", "user": {"login": "Kludex"},
+                    "labels": [], "comments": 1, "updated_at": "2026-10-18T10:00:00Z", "body": "Preserve trailers."}
+        if name == "issue_read":
+            return {"number": number, "title": f"Issue {number}", "state": "open",
+                    "html_url": f"https://github.com/{owner}/{repo}/issues/{number}", "user": {"login": "alice"},
+                    "labels": [{"name": "bug"}], "comments": 2, "updated_at": "2026-10-18T10:00:00Z",
+                    "body": "Something breaks."}
+        # Write tools: same shape as GitHub MCP v2.0.2 (MinimalResponse {"id", "url"})
+        url = f"https://github.com/{owner}/{repo}/issues/{number or 99}#issuecomment-{len(self.calls)}"
+        if name == "add_issue_comment":
+            self.comments.setdefault(number, []).append({"body": arguments["body"], "html_url": url})
+        return {"id": str(len(self.calls)), "url": url}
+
+
 class FakeReranker:
     """Scores a text by how many distinct query words it contains."""
 
