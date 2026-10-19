@@ -36,6 +36,13 @@ def test_dense_returns_hits_with_metadata(seeded_db):
     assert hits[0].url.startswith("https://github.com/o/r/") and hits[0].title
 
 
+def test_hits_carry_state_and_author(seeded_db):
+    # Status/ownership questions ("is it merged? who made it?") need document metadata, not just text.
+    for mode in ("dense", "sparse", "hybrid"):
+        h = next(h for h in search(seeded_db, FakeEmbedder(), "ERR_TIMEOUT client", mode=mode, k=5) if h.number == 11)
+        assert (h.state, h.author) == ("closed", "alice")
+
+
 @pytest.mark.parametrize("query", ['why? (JWT) "auth" AND: #4521', "", "   ", "???", "content:foo OR"])
 def test_odd_queries_do_not_error(seeded_db, query):
     for mode in ("dense", "sparse", "hybrid"):

@@ -19,3 +19,5 @@ class Hit:
     title: str
     url: str
     number: int | None
+    state: str | None = None  # open | closed | merged (issues/PRs only)
+    author: str | None = None

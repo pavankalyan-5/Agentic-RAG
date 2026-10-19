@@ -1,17 +1,23 @@
 """Command-line interface: copilot init-db | sync | search | spend."""
 
+import uuid
 from pathlib import Path
 from typing import Annotated
 
 import psycopg
 import typer
 
+from copilot.agent.graph import build_graph, open_checkpointer, run_turn
+from copilot.agent.nodes import AgentDeps
 from copilot.config import Settings, get_settings
 from copilot.db.connection import apply_schema, connect
 from copilot.ingest.github_api import GitHubClient
 from copilot.ingest.pipeline import sync_repo
-from copilot.llm.gateway import BudgetExceeded, Embedder, LLMGateway, spent_usd
+from copilot.llm.gateway import (
+    BudgetExceeded, ChatModel, Embedder, LLMGateway, LLMOutputError, ProviderError, spent_usd,
+)
 from copilot.retrieval.models import SearchFilters
+from copilot.retrieval.rerank import CrossEncoderReranker, Reranker
 from copilot.retrieval.search import search as run_search
 
 app = typer.Typer(help="Dev Docs Copilot", no_args_is_help=True)
@@ -21,6 +27,14 @@ WORKDIR = Path("data/repos")
 
 def build_embedder(conn: psycopg.Connection, settings: Settings) -> Embedder:
     return LLMGateway(conn, settings)
+
+
+def build_chat(conn: psycopg.Connection, settings: Settings) -> ChatModel:
+    return LLMGateway(conn, settings)
+
+
+def build_reranker(settings: Settings) -> Reranker:
+    return CrossEncoderReranker(settings.reranker_model)
 
 
 @app.command("init-db")
@@ -78,6 +92,38 @@ def search(
         label = f"[{h.doc_type} #{h.number}]" if h.number is not None else f"[{h.doc_type}]"
         snippet = " ".join(h.content.split())[:200]
         typer.echo(f"{i}. {h.score:.4f}  {label}  {h.title}\n   {h.url}\n   {snippet}\n")
+
+
+@app.command()
+def ask(
+    question: str,
+    thread: Annotated[str | None, typer.Option(help="continue an earlier conversation")] = None,
+) -> None:
+    """Ask the agent a question; answers cite their sources."""
+    settings = get_settings()
+    thread = thread or uuid.uuid4().hex[:8]
+    with connect(settings.database_url) as conn, open_checkpointer(settings.database_url) as checkpointer:
+        before = spent_usd(conn)
+        deps = AgentDeps(conn=conn, llm=build_chat(conn, settings), embedder=build_embedder(conn, settings),
+                         reranker=build_reranker(settings), settings=settings)
+        try:
+            answer = run_turn(build_graph(deps, checkpointer), thread, question)
+        except BudgetExceeded as exc:
+            typer.echo(f"Stopped: budget ceiling reached ({exc}). thread: {thread}", err=True)
+            raise typer.Exit(1)
+        except (LLMOutputError, ProviderError) as exc:
+            typer.echo(f"Sorry, I couldn't get an answer from the model ({type(exc).__name__}: {exc}). "
+                       f"Try again in a moment. thread: {thread}", err=True)
+            raise typer.Exit(1)
+        typer.echo(f"\n{answer['text']}\n")
+        if answer["sources"]:
+            typer.echo("Sources:")
+            for s in answer["sources"]:
+                label = f"[{s['doc_type']} #{s['number']}]" if s["number"] is not None else f"[{s['doc_type']}]"
+                typer.echo(f"  [{s['chunk_id']}] {label} {s['title']} — {s['url']}")
+        after = spent_usd(conn)
+        typer.echo(f"\nthread: {thread} · this question: ${after - before:.5f} · "
+                   f"total: ${after:.4f} of ${settings.budget_usd:.2f}")
 
 
 @app.command()

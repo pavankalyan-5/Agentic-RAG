@@ -1,0 +1,1459 @@
+[
+  {
+    "thread": "lifespan",
+    "question": "How do I run code when the application starts up and shuts down?",
+    "seconds": 3.17,
+    "cost_usd": 0.00052,
+    "sub_queries": [
+      {
+        "query": "How to run code on application startup?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 72,
+            "score": 0.63,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "lifespan",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/lifespan.md",
+            "preview": "Starlette applications can register a lifespan handler for dealing with code that needs to run before the application starts up, or when the"
+          },
+          {
+            "chunk_id": 861,
+            "score": -1.65,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "config",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/config.md",
+            "preview": "A full example Structuring large applications can be complex. You need proper separation of configuration and code, database isolation durin"
+          },
+          {
+            "chunk_id": 44,
+            "score": -1.67,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Contributing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/contributing.md",
+            "preview": "Testing and Linting We use custom shell scripts to automate testing, linting, and documentation building workflow. To run the tests, use: ``"
+          },
+          {
+            "chunk_id": 847,
+            "score": -2.1,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 869,
+            "score": -2.7,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 395,
+            "score": -3.54,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Development Scripts",
+            "url": "https://github.com/Kludex/starlette/blob/main/scripts/README.md",
+            "preview": "Development Scripts * `scripts/install` - Install dependencies in a virtual environment. * `scripts/test` - Run the test suite. * `scripts/l"
+          },
+          {
+            "chunk_id": 21,
+            "score": -6.33,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "??? abstract \"API Reference\" ::: starlette.applications.Starlette options: parameter_headings: false show_root_heading: true heading_level: "
+          },
+          {
+            "chunk_id": 867,
+            "score": -6.45,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 845,
+            "score": -6.76,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 22,
+            "score": -8.45,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "Storing state on the app instance You can store arbitrary extra state on the application instance, using the generic `app.state` attribute. "
+          }
+        ]
+      },
+      {
+        "query": "How to run code on application shutdown?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 72,
+            "score": 2.87,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "lifespan",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/lifespan.md",
+            "preview": "Starlette applications can register a lifespan handler for dealing with code that needs to run before the application starts up, or when the"
+          },
+          {
+            "chunk_id": 44,
+            "score": -5.18,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Contributing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/contributing.md",
+            "preview": "Testing and Linting We use custom shell scripts to automate testing, linting, and documentation building workflow. To run the tests, use: ``"
+          },
+          {
+            "chunk_id": 21,
+            "score": -5.42,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "??? abstract \"API Reference\" ::: starlette.applications.Starlette options: parameter_headings: false show_root_heading: true heading_level: "
+          },
+          {
+            "chunk_id": 869,
+            "score": -5.44,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 847,
+            "score": -5.6,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 861,
+            "score": -5.66,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "config",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/config.md",
+            "preview": "A full example Structuring large applications can be complex. You need proper separation of configuration and code, database isolation durin"
+          },
+          {
+            "chunk_id": 395,
+            "score": -7.69,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Development Scripts",
+            "url": "https://github.com/Kludex/starlette/blob/main/scripts/README.md",
+            "preview": "Development Scripts * `scripts/install` - Install dependencies in a virtual environment. * `scripts/test` - Run the test suite. * `scripts/l"
+          },
+          {
+            "chunk_id": 867,
+            "score": -8.78,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 845,
+            "score": -9.0,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 22,
+            "score": -9.87,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "Storing state on the app instance You can store arbitrary extra state on the application instance, using the generic `app.state` attribute. "
+          }
+        ]
+      }
+    ],
+    "answer": {
+      "text": "You can run code at application startup and shutdown by registering a lifespan handler in your Starlette application. This is done by defining an async context manager function decorated with `@contextlib.asynccontextmanager` that yields control between startup and shutdown code. For example:\n\n```python\nimport contextlib\nfrom starlette.applications import Starlette\n\n@contextlib.asynccontextmanager\nasync def lifespan(app):\n    async with some_async_resource():\n        print(\"Run at startup!\")\n        yield\n        print(\"Run on shutdown!\")\n\nroutes = [ ... ]\napp = Starlette(routes=routes, lifespan=lifespan)\n```\n\nStarlette will run the startup code before serving requests and the shutdown code after all connections are closed and background tasks complete [72].",
+      "sources": [
+        {
+          "chunk_id": 72,
+          "title": "lifespan",
+          "url": "https://github.com/Kludex/starlette/blob/main/docs/lifespan.md",
+          "doc_type": "doc",
+          "number": null
+        }
+      ],
+      "insufficient_context": false
+    }
+  },
+  {
+    "thread": "uploads",
+    "question": "How can I limit the size of uploaded files in multipart forms?",
+    "seconds": 4.05,
+    "cost_usd": 0.001146,
+    "sub_queries": [
+      {
+        "query": "How to limit the size of uploaded files in multipart forms in a web application?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 828,
+            "score": 5.2,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "routing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/routing.md",
+            "preview": "Request body size limits Use a non-negative `max_body_size` to limit the total number of request body bytes accepted by an application. The "
+          },
+          {
+            "chunk_id": 308,
+            "score": 4.35,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request ```python from starlette.requests import Request from starlette.responses import Response async def app(scope, receive, send): asser"
+          },
+          {
+            "chunk_id": 882,
+            "score": 4.35,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "RequestBodyLimitMiddleware Limits the total size of incoming HTTP request bodies. The limit applies to the raw body bytes, including multipa"
+          },
+          {
+            "chunk_id": 18,
+            "score": 3.37,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Benchmarks",
+            "url": "https://github.com/Kludex/starlette/blob/main/benchmarks/README.md",
+            "preview": "Multipart forms The multipart benchmark measures `Request.form()` with field-heavy, in-memory file, spooled file, mixed form, and boundary-l"
+          },
+          {
+            "chunk_id": 309,
+            "score": 0.31,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request * `filename`: An `str` with the original file name that was uploaded or `None` if it's not available (e.g. `myimage.jpg`). * `conten"
+          },
+          {
+            "chunk_id": 883,
+            "score": -3.99,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "GZipMiddleware Handles GZip responses for any request that includes `\"gzip\"` in the `Accept-Encoding` header. The middleware will handle bot"
+          },
+          {
+            "chunk_id": 14,
+            "score": -5.93,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Benchmarks",
+            "url": "https://github.com/Kludex/starlette/blob/main/benchmarks/README.md",
+            "preview": "URL-encoded forms The URL-encoded benchmark measures `Request.form()` with 1,000 fields, a large field, percent-encoded data, and field-coun"
+          },
+          {
+            "chunk_id": 385,
+            "score": -6.04,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Thread Pool",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/threadpool.md",
+            "preview": "Concurrency Limitations The default thread pool size is only 40 _tokens_. This means that only 40 threads can run at the same time. This lim"
+          },
+          {
+            "chunk_id": 902,
+            "score": -7.91,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Third party middleware A rate limit middleware. Regular expression matches url; flexible rules; highly customizable. Very easy to use. #### "
+          },
+          {
+            "chunk_id": 3,
+            "score": -11.1,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "LICENSE",
+            "url": "https://github.com/Kludex/starlette/blob/main/LICENSE.md",
+            "preview": "Copyright \u00a9 2018, [Encode OSS Ltd](https://www.encode.io/). All rights reserved. Redistribution and use in source and binary forms, with or "
+          }
+        ]
+      },
+      {
+        "query": "Are there specific settings or parameters in the web framework or server configuration to restrict upload size?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 828,
+            "score": -2.69,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "routing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/routing.md",
+            "preview": "Request body size limits Use a non-negative `max_body_size` to limit the total number of request body bytes accepted by an application. The "
+          },
+          {
+            "chunk_id": 883,
+            "score": -6.57,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "GZipMiddleware Handles GZip responses for any request that includes `\"gzip\"` in the `Accept-Encoding` header. The middleware will handle bot"
+          },
+          {
+            "chunk_id": 18,
+            "score": -6.66,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Benchmarks",
+            "url": "https://github.com/Kludex/starlette/blob/main/benchmarks/README.md",
+            "preview": "Multipart forms The multipart benchmark measures `Request.form()` with field-heavy, in-memory file, spooled file, mixed form, and boundary-l"
+          },
+          {
+            "chunk_id": 308,
+            "score": -6.71,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request ```python from starlette.requests import Request from starlette.responses import Response async def app(scope, receive, send): asser"
+          },
+          {
+            "chunk_id": 309,
+            "score": -6.86,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request * `filename`: An `str` with the original file name that was uploaded or `None` if it's not available (e.g. `myimage.jpg`). * `conten"
+          },
+          {
+            "chunk_id": 882,
+            "score": -7.07,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "RequestBodyLimitMiddleware Limits the total size of incoming HTTP request bodies. The limit applies to the raw body bytes, including multipa"
+          },
+          {
+            "chunk_id": 20,
+            "score": -8.14,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Benchmarks",
+            "url": "https://github.com/Kludex/starlette/blob/main/benchmarks/README.md",
+            "preview": "GZip The gzip benchmark exercises Starlette's `GZipMiddleware` through its ASGI interface with deterministic payloads representing valid JSO"
+          },
+          {
+            "chunk_id": 901,
+            "score": -9.88,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Third party middleware #### [asgi-auth-github](https://github.com/simonw/asgi-auth-github) This middleware adds authentication to any ASGI a"
+          },
+          {
+            "chunk_id": 372,
+            "score": -10.29,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "third-party-packages",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/third-party-packages.md",
+            "preview": "Starlette-Admin <a href=\"https://github.com/jowilf/starlette-admin\" target=\"_blank\">GitHub</a> | <a href=\"https://jowilf.github.io/starlette"
+          },
+          {
+            "chunk_id": 854,
+            "score": -10.33,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "config",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/config.md",
+            "preview": "Starlette encourages a strict separation of configuration from code, following [the twelve-factor pattern][twelve-factor]. Configuration sho"
+          }
+        ]
+      },
+      {
+        "query": "What are common practices or code snippets to enforce maximum upload size in multipart form handling?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 828,
+            "score": 0.44,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "routing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/routing.md",
+            "preview": "Request body size limits Use a non-negative `max_body_size` to limit the total number of request body bytes accepted by an application. The "
+          },
+          {
+            "chunk_id": 18,
+            "score": -1.89,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Benchmarks",
+            "url": "https://github.com/Kludex/starlette/blob/main/benchmarks/README.md",
+            "preview": "Multipart forms The multipart benchmark measures `Request.form()` with field-heavy, in-memory file, spooled file, mixed form, and boundary-l"
+          },
+          {
+            "chunk_id": 882,
+            "score": -3.68,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "RequestBodyLimitMiddleware Limits the total size of incoming HTTP request bodies. The limit applies to the raw body bytes, including multipa"
+          },
+          {
+            "chunk_id": 308,
+            "score": -4.08,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request ```python from starlette.requests import Request from starlette.responses import Response async def app(scope, receive, send): asser"
+          },
+          {
+            "chunk_id": 1,
+            "score": -8.27,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "AGENTS",
+            "url": "https://github.com/Kludex/starlette/blob/main/AGENTS.md",
+            "preview": "Writing Documentation 1. After each heading, always include text explaining the section before any code snippets."
+          },
+          {
+            "chunk_id": 883,
+            "score": -8.5,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "GZipMiddleware Handles GZip responses for any request that includes `\"gzip\"` in the `Accept-Encoding` header. The middleware will handle bot"
+          },
+          {
+            "chunk_id": 309,
+            "score": -9.1,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request * `filename`: An `str` with the original file name that was uploaded or `None` if it's not available (e.g. `myimage.jpg`). * `conten"
+          },
+          {
+            "chunk_id": 20,
+            "score": -9.18,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Benchmarks",
+            "url": "https://github.com/Kludex/starlette/blob/main/benchmarks/README.md",
+            "preview": "GZip The gzip benchmark exercises Starlette's `GZipMiddleware` through its ASGI interface with deterministic payloads representing valid JSO"
+          },
+          {
+            "chunk_id": 893,
+            "score": -10.42,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Common patterns async def __call__(self, scope, receive, send): if scope[\"type\"] != \"http\": await self.app(scope, receive, send) return url "
+          },
+          {
+            "chunk_id": 310,
+            "score": -10.83,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "requests",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+            "preview": "Request !!! info As settled in [RFC-7578: 4.2](https://www.ietf.org/rfc/rfc7578.txt), form-data content part that contains file assumed to h"
+          }
+        ]
+      }
+    ],
+    "answer": {
+      "text": "To limit the size of uploaded files in multipart forms, you can configure the `max_body_size` parameter on the application, router, mount, or route, or use the `RequestBodyLimitMiddleware`. This limit applies to the total request body size, including uploaded files and multipart encoding overhead. For example, you can set `max_body_size` on a route like this:\n\n```python\nRoute(\"/upload\", upload, methods=[\"POST\"], max_body_size=100 * 1024 * 1024),\n```\n\nor use middleware:\n\n```python\nmiddleware = [\n    Middleware(RequestBodyLimitMiddleware, max_body_size=10 * 1024 * 1024)\n]\n```\n\nAdditionally, when parsing the form with `request.form()`, you can limit the size of each non-file field with `max_part_size`, but uploaded files themselves are spooled to temporary storage and are not limited by `max_part_size`. Therefore, the main control for uploaded file size is via `max_body_size` limits.\n\nThis approach ensures that the entire request body, including multipart file data and encoding overhead, does not exceed the specified size limit, preventing excessively large uploads.\n\nReferences: chunks 828, 882, 308",
+      "sources": [
+        {
+          "chunk_id": 828,
+          "title": "routing",
+          "url": "https://github.com/Kludex/starlette/blob/main/docs/routing.md",
+          "doc_type": "doc",
+          "number": null
+        },
+        {
+          "chunk_id": 882,
+          "title": "middleware",
+          "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+          "doc_type": "doc",
+          "number": null
+        },
+        {
+          "chunk_id": 308,
+          "title": "requests",
+          "url": "https://github.com/Kludex/starlette/blob/main/docs/requests.md",
+          "doc_type": "doc",
+          "number": null
+        }
+      ],
+      "insufficient_context": false
+    }
+  },
+  {
+    "thread": "middleware",
+    "question": "What changed recently in BaseHTTPMiddleware?",
+    "seconds": 2.07,
+    "cost_usd": 0.001214,
+    "sub_queries": [
+      {
+        "query": "Recent changes in BaseHTTPMiddleware",
+        "doc_types": null,
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 887,
+            "score": 3.09,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Limitations Currently, the `BaseHTTPMiddleware` has some known limitations: - Using `BaseHTTPMiddleware` will prevent changes to [`contextva"
+          },
+          {
+            "chunk_id": 547,
+            "score": 2.76,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware Preserve trailer declarations and messages through `BaseHTTPMiddleware`, and kee"
+          },
+          {
+            "chunk_id": 594,
+            "score": 1.06,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3628,
+            "title": "Close `Request.stream()` generators with `aclosing`",
+            "url": "https://github.com/Kludex/starlette/pull/3628",
+            "preview": "#3628 Close `Request.stream()` generators with `aclosing` <!-- Thanks for contributing to Starlette! \ud83d\udc9a Given this is a project maintained by"
+          },
+          {
+            "chunk_id": 549,
+            "score": 0.71,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware cubic-dev-ai[bot]: <!-- cubic:v=80ffad3e-ad73-42c2-86ff-926ce94e048f --> <!-- cu"
+          },
+          {
+            "chunk_id": 551,
+            "score": 0.14,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware Kludex: I would prefer minimal tests. Without much parametrize. cubic-dev-ai[bot"
+          },
+          {
+            "chunk_id": 885,
+            "score": 0.01,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "BaseHTTPMiddleware An abstract class that allows you to write ASGI middleware against a request/response interface."
+          },
+          {
+            "chunk_id": 886,
+            "score": -0.48,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Usage To implement a middleware class using `BaseHTTPMiddleware`, you must override the `async def dispatch(request, call_next)` method. ```"
+          },
+          {
+            "chunk_id": 550,
+            "score": -0.71,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware cubic-dev-ai[bot]: <!-- cubic:v=80916ed5-cde6-45eb-b23a-4a28339f8d6f --> <!-- cu"
+          },
+          {
+            "chunk_id": 548,
+            "score": -1.55,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware cubic-dev-ai[bot]: <!-- cubic:v=27a0e3d5-d680-4d9f-8a9c-b57233439b7d --> <!-- cu"
+          },
+          {
+            "chunk_id": 582,
+            "score": -3.27,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3435,
+            "title": "Add HTTP 103 Early Hints support",
+            "url": "https://github.com/Kludex/starlette/pull/3435",
+            "preview": "#3435 Add HTTP 103 Early Hints support ## Summary Add `Request.send_early_hints()` for the ASGI `http.response.early_hint` extension. ```pyt"
+          }
+        ]
+      }
+    ],
+    "answer": {
+      "text": "Recently, BaseHTTPMiddleware was updated to preserve response trailers and keep downstream tasks alive until final trailers are sent. This includes handling nested middleware, replacement responses, missing trailers, and completion ordering. The change treats the `http.response.pathsend` extension properly to avoid deadlocks when trailers are pending. This was introduced in PR #3564, which was closed but merged, and the update ensures trailer declarations and messages are preserved through BaseHTTPMiddleware [547][549].",
+      "sources": [
+        {
+          "chunk_id": 547,
+          "title": "Preserve response trailers through BaseHTTPMiddleware",
+          "url": "https://github.com/Kludex/starlette/pull/3564",
+          "doc_type": "pr",
+          "number": 3564
+        },
+        {
+          "chunk_id": 549,
+          "title": "Preserve response trailers through BaseHTTPMiddleware",
+          "url": "https://github.com/Kludex/starlette/pull/3564",
+          "doc_type": "pr",
+          "number": 3564
+        }
+      ],
+      "insufficient_context": false
+    }
+  },
+  {
+    "thread": "middleware",
+    "question": "Has that change been merged, and who made it?",
+    "seconds": 4.87,
+    "cost_usd": 0.001474,
+    "sub_queries": [
+      {
+        "query": "PR #3564 in the project repository",
+        "doc_types": [
+          "pr"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 547,
+            "score": 4.42,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware Preserve trailer declarations and messages through `BaseHTTPMiddleware`, and kee"
+          },
+          {
+            "chunk_id": 553,
+            "score": 4.28,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3565,
+            "title": "Preserve response trailers through GZipMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3565",
+            "preview": "#3565 Preserve response trailers through GZipMiddleware Forward response trailers through both gzip and identity paths without adding an inc"
+          },
+          {
+            "chunk_id": 920,
+            "score": -1.65,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3607,
+            "title": "Bump the github-actions group with 4 updates",
+            "url": "https://github.com/Kludex/starlette/pull/3607",
+            "preview": "#3607 Bump the github-actions group with 4 updates rebase this PR - `@dependabot recreate` will recreate this PR, overwriting any edits that"
+          },
+          {
+            "chunk_id": 701,
+            "score": -3.08,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3591,
+            "title": "Fix URL path authority parsing when netloc is empty (Fixes #3579)",
+            "url": "https://github.com/Kludex/starlette/pull/3591",
+            "preview": "#3591 Fix URL path authority parsing when netloc is empty (Fixes #3579) cubic-dev-ai[bot]: <!-- cubic:v=a91a5a9d-5457-4e55-ab12-f5565b4c20e6"
+          },
+          {
+            "chunk_id": 416,
+            "score": -3.35,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3575,
+            "title": "Prepare release 1.7.0",
+            "url": "https://github.com/Kludex/starlette/pull/3575",
+            "preview": "#3575 Prepare release 1.7.0 Prepare Starlette 1.7.0 with a version bump and release notes for the user-facing changes since 1.6.0. Highlight"
+          },
+          {
+            "chunk_id": 610,
+            "score": -4.03,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3624,
+            "title": "Fix: prevent // path from becoming netloc when URL is created from scope without origin",
+            "url": "https://github.com/Kludex/starlette/pull/3624",
+            "preview": "#3624 Fix: prevent // path from becoming netloc when URL is created from scope without origin cubic-dev-ai[bot]: <!-- cubic:v=70abc410-aa43-"
+          },
+          {
+            "chunk_id": 775,
+            "score": -5.01,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3677,
+            "title": "docs: add Simplified Chinese translation of README",
+            "url": "https://github.com/Kludex/starlette/pull/3677",
+            "preview": "#3677 docs: add Simplified Chinese translation of README cubic-dev-ai[bot]: <!-- cubic:v=009ea67b-8ce7-40c9-ac02-e9d728a70da1 --> <!-- cubic"
+          },
+          {
+            "chunk_id": 625,
+            "score": -5.71,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3640,
+            "title": "Include allowed methods in StaticFiles 405 responses",
+            "url": "https://github.com/Kludex/starlette/pull/3640",
+            "preview": "#3640 Include allowed methods in StaticFiles 405 responses codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Merging this P"
+          },
+          {
+            "chunk_id": 420,
+            "score": -5.88,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3547,
+            "title": "Update link to Authlib's Starlette integration docs",
+            "url": "https://github.com/Kludex/starlette/pull/3547",
+            "preview": "#3547 Update link to Authlib's Starlette integration docs # Summary Updated a link on the [third-party packages](https://docs.authlib.org/en"
+          },
+          {
+            "chunk_id": 916,
+            "score": -6.51,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3607,
+            "title": "Bump the github-actions group with 4 updates",
+            "url": "https://github.com/Kludex/starlette/pull/3607",
+            "preview": "#3607 Bump the github-actions group with 4 updates 92986\"><code>cd6314a</code></a> Thanks <a href=\"https://github.com/penalosa\"><code>@\u200bpena"
+          }
+        ]
+      },
+      {
+        "query": "PR #3564 merge status",
+        "doc_types": [
+          "pr"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 547,
+            "score": 3.77,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware Preserve trailer declarations and messages through `BaseHTTPMiddleware`, and kee"
+          },
+          {
+            "chunk_id": 553,
+            "score": 2.96,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3565,
+            "title": "Preserve response trailers through GZipMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3565",
+            "preview": "#3565 Preserve response trailers through GZipMiddleware Forward response trailers through both gzip and identity paths without adding an inc"
+          },
+          {
+            "chunk_id": 401,
+            "score": 2.89,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3557,
+            "title": "Renumber the duplicated wrapped_rcv state comment",
+            "url": "https://github.com/Kludex/starlette/pull/3557",
+            "preview": "#3557 Renumber the duplicated wrapped_rcv state comment codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Merging this PR w"
+          },
+          {
+            "chunk_id": 551,
+            "score": 1.38,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware Kludex: I would prefer minimal tests. Without much parametrize. cubic-dev-ai[bot"
+          },
+          {
+            "chunk_id": 550,
+            "score": 1.2,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3564,
+            "title": "Preserve response trailers through BaseHTTPMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3564",
+            "preview": "#3564 Preserve response trailers through BaseHTTPMiddleware cubic-dev-ai[bot]: <!-- cubic:v=80916ed5-cde6-45eb-b23a-4a28339f8d6f --> <!-- cu"
+          },
+          {
+            "chunk_id": 444,
+            "score": 0.39,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3355,
+            "title": "fix: support streaming responses in TestClient (fixes #1102) ",
+            "url": "https://github.com/Kludex/starlette/pull/3355",
+            "preview": "#3355 fix: support streaming responses in TestClient (fixes #1102) codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Mergin"
+          },
+          {
+            "chunk_id": 920,
+            "score": -2.7,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3607,
+            "title": "Bump the github-actions group with 4 updates",
+            "url": "https://github.com/Kludex/starlette/pull/3607",
+            "preview": "#3607 Bump the github-actions group with 4 updates rebase this PR - `@dependabot recreate` will recreate this PR, overwriting any edits that"
+          },
+          {
+            "chunk_id": 916,
+            "score": -4.01,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3607,
+            "title": "Bump the github-actions group with 4 updates",
+            "url": "https://github.com/Kludex/starlette/pull/3607",
+            "preview": "#3607 Bump the github-actions group with 4 updates 92986\"><code>cd6314a</code></a> Thanks <a href=\"https://github.com/penalosa\"><code>@\u200bpena"
+          },
+          {
+            "chunk_id": 420,
+            "score": -6.59,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3547,
+            "title": "Update link to Authlib's Starlette integration docs",
+            "url": "https://github.com/Kludex/starlette/pull/3547",
+            "preview": "#3547 Update link to Authlib's Starlette integration docs # Summary Updated a link on the [third-party packages](https://docs.authlib.org/en"
+          },
+          {
+            "chunk_id": 917,
+            "score": -6.95,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3607,
+            "title": "Bump the github-actions group with 4 updates",
+            "url": "https://github.com/Kludex/starlette/pull/3607",
+            "preview": "#3607 Bump the github-actions group with 4 updates sequencing</li> <li><a href=\"https://github.com/cloudflare/wrangler-action/commit/d7fd981"
+          }
+        ]
+      },
+      {
+        "query": "PR #3564 author",
+        "doc_types": [
+          "pr"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 553,
+            "score": 4.22,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3565,
+            "title": "Preserve response trailers through GZipMiddleware",
+            "url": "https://github.com/Kludex/starlette/pull/3565",
+            "preview": "#3565 Preserve response trailers through GZipMiddleware Forward response trailers through both gzip and identity paths without adding an inc"
+          },
+          {
+            "chunk_id": 757,
+            "score": 2.83,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3654,
+            "title": "Add adminsite to the third-party packages",
+            "url": "https://github.com/Kludex/starlette/pull/3654",
+            "preview": "#3654 Add adminsite to the third-party packages # Summary Adds adminsite to the Plugins section of the third-party packages page. It's an ad"
+          },
+          {
+            "chunk_id": 401,
+            "score": -0.49,
+            "kept": true,
+            "doc_type": "pr",
+            "number": 3557,
+            "title": "Renumber the duplicated wrapped_rcv state comment",
+            "url": "https://github.com/Kludex/starlette/pull/3557",
+            "preview": "#3557 Renumber the duplicated wrapped_rcv state comment codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Merging this PR w"
+          },
+          {
+            "chunk_id": 657,
+            "score": -2.57,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3652,
+            "title": "Prevent path from bleeding into authority when scope has no origin (#3579)",
+            "url": "https://github.com/Kludex/starlette/pull/3652",
+            "preview": "#3652 Prevent path from bleeding into authority when scope has no origin (#3579) _content=benchmark) | 6.8 ms | 6.1 ms | +10.92% | > [!TIP] "
+          },
+          {
+            "chunk_id": 413,
+            "score": -2.74,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3574,
+            "title": "Mark OpenTelemetryMiddleware as experimental",
+            "url": "https://github.com/Kludex/starlette/pull/3574",
+            "preview": "#3574 Mark OpenTelemetryMiddleware as experimental codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Merging this PR will *"
+          },
+          {
+            "chunk_id": 444,
+            "score": -4.44,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3355,
+            "title": "fix: support streaming responses in TestClient (fixes #1102) ",
+            "url": "https://github.com/Kludex/starlette/pull/3355",
+            "preview": "#3355 fix: support streaming responses in TestClient (fixes #1102) codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Mergin"
+          },
+          {
+            "chunk_id": 770,
+            "score": -6.16,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3625,
+            "title": "Fix outdated Signature lines in background and responses docs",
+            "url": "https://github.com/Kludex/starlette/pull/3625",
+            "preview": "#3625 Fix outdated Signature lines in background and responses docs codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Mergi"
+          },
+          {
+            "chunk_id": 625,
+            "score": -6.63,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3640,
+            "title": "Include allowed methods in StaticFiles 405 responses",
+            "url": "https://github.com/Kludex/starlette/pull/3640",
+            "preview": "#3640 Include allowed methods in StaticFiles 405 responses codspeed[bot]: <!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ --> ## Merging this P"
+          },
+          {
+            "chunk_id": 420,
+            "score": -6.91,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3547,
+            "title": "Update link to Authlib's Starlette integration docs",
+            "url": "https://github.com/Kludex/starlette/pull/3547",
+            "preview": "#3547 Update link to Authlib's Starlette integration docs # Summary Updated a link on the [third-party packages](https://docs.authlib.org/en"
+          },
+          {
+            "chunk_id": 596,
+            "score": -7.49,
+            "kept": false,
+            "doc_type": "pr",
+            "number": 3628,
+            "title": "Close `Request.stream()` generators with `aclosing`",
+            "url": "https://github.com/Kludex/starlette/pull/3628",
+            "preview": "#3628 Close `Request.stream()` generators with `aclosing` PR, or directly use the [CodSpeed MCP](https://codspeed.io/docs/ai/mcp?utm_source="
+          }
+        ]
+      }
+    ],
+    "answer": {
+      "text": "The change to preserve response trailers through BaseHTTPMiddleware was made in PR #3564. This PR was authored by Kludex and the state of the PR is closed, indicating it was not merged but closed without merging [547].",
+      "sources": [
+        {
+          "chunk_id": 547,
+          "title": "Preserve response trailers through BaseHTTPMiddleware",
+          "url": "https://github.com/Kludex/starlette/pull/3564",
+          "doc_type": "pr",
+          "number": 3564
+        }
+      ],
+      "insufficient_context": false
+    }
+  },
+  {
+    "thread": "jwt",
+    "question": "How do I add JWT authentication to my Starlette app?",
+    "seconds": 2.1,
+    "cost_usd": 0.000888,
+    "sub_queries": [
+      {
+        "query": "How to add JWT authentication to a Starlette app?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 853,
+            "score": 4.21,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "authentication",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/authentication.md",
+            "preview": "Custom authentication error responses You can customise the error response sent when a `AuthenticationError` is raised by an auth backend: `"
+          },
+          {
+            "chunk_id": 849,
+            "score": 3.81,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "authentication",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/authentication.md",
+            "preview": "Starlette offers a simple but powerful interface for handling authentication and permissions. Once you've installed `AuthenticationMiddlewar"
+          },
+          {
+            "chunk_id": 901,
+            "score": 2.81,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Third party middleware #### [asgi-auth-github](https://github.com/simonw/asgi-auth-github) This middleware adds authentication to any ASGI a"
+          },
+          {
+            "chunk_id": 59,
+            "score": 1.76,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "exceptions",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/exceptions.md",
+            "preview": "Starlette allows you to install custom exception handlers to deal with how you return responses when errors or handled exceptions occur. ```"
+          },
+          {
+            "chunk_id": 872,
+            "score": -0.12,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Using middleware The Starlette application class allows you to include the ASGI middleware in a way that ensures that it remains wrapped by "
+          },
+          {
+            "chunk_id": 847,
+            "score": -1.74,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 869,
+            "score": -1.81,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 871,
+            "score": -2.09,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "middleware",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/middleware.md",
+            "preview": "Starlette includes several middleware classes for adding behavior that is applied across your entire application. These are all implemented "
+          },
+          {
+            "chunk_id": 364,
+            "score": -3.35,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "third-party-packages",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/third-party-packages.md",
+            "preview": "Starlette Context <a href=\"https://github.com/tomwojcik/starlette-context\" target=\"_blank\">GitHub</a> Middleware for Starlette that allows y"
+          },
+          {
+            "chunk_id": 368,
+            "score": -5.12,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "third-party-packages",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/third-party-packages.md",
+            "preview": "Starlette-Login <a href=\"https://github.com/jockerz/Starlette-Login\" target=\"_blank\">GitHub</a> | <a href=\"https://starlette-login.readthedo"
+          }
+        ]
+      }
+    ],
+    "answer": {
+      "text": "The provided context does not include specific instructions or examples on how to add JWT authentication to a Starlette app. It mentions various third-party middleware, including AuthlibMiddleware which uses Authlib's JWT module as a drop-in replacement for Starlette session middleware, but does not provide detailed usage or integration steps for JWT authentication itself .",
+      "sources": [],
+      "insufficient_context": true
+    }
+  },
+  {
+    "thread": "lifespan-repeat",
+    "question": "How do I run code when the application starts up and shuts down?",
+    "seconds": 0.79,
+    "cost_usd": 0.0,
+    "sub_queries": [
+      {
+        "query": "How to run code on application startup?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 72,
+            "score": 0.63,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "lifespan",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/lifespan.md",
+            "preview": "Starlette applications can register a lifespan handler for dealing with code that needs to run before the application starts up, or when the"
+          },
+          {
+            "chunk_id": 861,
+            "score": -1.65,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "config",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/config.md",
+            "preview": "A full example Structuring large applications can be complex. You need proper separation of configuration and code, database isolation durin"
+          },
+          {
+            "chunk_id": 44,
+            "score": -1.67,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Contributing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/contributing.md",
+            "preview": "Testing and Linting We use custom shell scripts to automate testing, linting, and documentation building workflow. To run the tests, use: ``"
+          },
+          {
+            "chunk_id": 847,
+            "score": -2.1,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 869,
+            "score": -2.7,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 395,
+            "score": -3.54,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Development Scripts",
+            "url": "https://github.com/Kludex/starlette/blob/main/scripts/README.md",
+            "preview": "Development Scripts * `scripts/install` - Install dependencies in a virtual environment. * `scripts/test` - Run the test suite. * `scripts/l"
+          },
+          {
+            "chunk_id": 21,
+            "score": -6.33,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "??? abstract \"API Reference\" ::: starlette.applications.Starlette options: parameter_headings: false show_root_heading: true heading_level: "
+          },
+          {
+            "chunk_id": 867,
+            "score": -6.45,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 845,
+            "score": -6.76,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 22,
+            "score": -8.45,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "Storing state on the app instance You can store arbitrary extra state on the application instance, using the generic `app.state` attribute. "
+          }
+        ]
+      },
+      {
+        "query": "How to run code on application shutdown?",
+        "doc_types": [
+          "doc"
+        ],
+        "state": null,
+        "candidates": [
+          {
+            "chunk_id": 72,
+            "score": 2.87,
+            "kept": true,
+            "doc_type": "doc",
+            "number": null,
+            "title": "lifespan",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/lifespan.md",
+            "preview": "Starlette applications can register a lifespan handler for dealing with code that needs to run before the application starts up, or when the"
+          },
+          {
+            "chunk_id": 44,
+            "score": -5.18,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Contributing",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/contributing.md",
+            "preview": "Testing and Linting We use custom shell scripts to automate testing, linting, and documentation building workflow. To run the tests, use: ``"
+          },
+          {
+            "chunk_id": 21,
+            "score": -5.42,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "??? abstract \"API Reference\" ::: starlette.applications.Starlette options: parameter_headings: false show_root_heading: true heading_level: "
+          },
+          {
+            "chunk_id": 869,
+            "score": -5.44,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 847,
+            "score": -5.6,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Framework or Toolkit Starlette is designed to be used either as a complete framework, or as an ASGI toolkit. You can use any of its componen"
+          },
+          {
+            "chunk_id": 861,
+            "score": -5.66,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "config",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/config.md",
+            "preview": "A full example Structuring large applications can be complex. You need proper separation of configuration and code, database isolation durin"
+          },
+          {
+            "chunk_id": 395,
+            "score": -7.69,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Development Scripts",
+            "url": "https://github.com/Kludex/starlette/blob/main/scripts/README.md",
+            "preview": "Development Scripts * `scripts/install` - Install dependencies in a virtual environment. * `scripts/test` - Run the test suite. * `scripts/l"
+          },
+          {
+            "chunk_id": 867,
+            "score": -8.78,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Introduction",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/index.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 845,
+            "score": -9.0,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "Starlette",
+            "url": "https://github.com/Kludex/starlette/blob/main/README.md",
+            "preview": "Example ```python title=\"main.py\" from starlette.applications import Starlette from starlette.responses import JSONResponse from starlette.r"
+          },
+          {
+            "chunk_id": 22,
+            "score": -9.87,
+            "kept": false,
+            "doc_type": "doc",
+            "number": null,
+            "title": "applications",
+            "url": "https://github.com/Kludex/starlette/blob/main/docs/applications.md",
+            "preview": "Storing state on the app instance You can store arbitrary extra state on the application instance, using the generic `app.state` attribute. "
+          }
+        ]
+      }
+    ],
+    "answer": {
+      "text": "You can run code at application startup and shutdown by registering a lifespan handler in your Starlette application. This is done by defining an async context manager function decorated with `@contextlib.asynccontextmanager` that yields control between startup and shutdown code. For example:\n\n```python\nimport contextlib\nfrom starlette.applications import Starlette\n\n@contextlib.asynccontextmanager\nasync def lifespan(app):\n    async with some_async_resource():\n        print(\"Run at startup!\")\n        yield\n        print(\"Run on shutdown!\")\n\nroutes = [ ... ]\napp = Starlette(routes=routes, lifespan=lifespan)\n```\n\nStarlette will run the startup code before serving requests and the shutdown code after all connections are closed and background tasks complete [72].",
+      "sources": [
+        {
+          "chunk_id": 72,
+          "title": "lifespan",
+          "url": "https://github.com/Kludex/starlette/blob/main/docs/lifespan.md",
+          "doc_type": "doc",
+          "number": null
+        }
+      ],
+      "insufficient_context": false
+    }
+  },
+  {
+    "thread": "smalltalk",
+    "question": "thanks!",
+    "seconds": 0.02,
+    "cost_usd": 0.0,
+    "sub_queries": [],
+    "answer": {
+      "text": "Happy to help! Ask me anything about this project's docs, issues, or pull requests.",
+      "sources": [],
+      "insufficient_context": false
+    }
+  }
+]

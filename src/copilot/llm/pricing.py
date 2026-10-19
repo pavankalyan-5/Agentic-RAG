@@ -1,6 +1,8 @@
 # USD per 1M tokens. Verify against platform.openai.com/pricing before real runs.
 PRICES: dict[str, dict[str, float]] = {
     "text-embedding-3-small": {"input": 0.02, "output": 0.0},
+    "gpt-4.1-nano": {"input": 0.10, "output": 0.40},
+    "gpt-4.1-mini": {"input": 0.40, "output": 1.60},
 }
 
 

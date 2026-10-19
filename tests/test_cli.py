@@ -50,6 +50,69 @@ def test_sync_full_flag_is_passed_through(cli_env, monkeypatch):
     assert seen["full"] is True
 
 
+def _cite_first(messages):
+    import re
+
+    from copilot.agent.schemas import AnswerDraft
+
+    first = int(re.search(r'<chunk id="(\d+)"', messages[1]["content"]).group(1))
+    return AnswerDraft(answer=f"It times out [{first}].", cited_chunk_ids=[first], insufficient_context=False)
+
+
+@pytest.fixture
+def ask_env(cli_env, monkeypatch):
+    from copilot.agent.schemas import Plan
+    from copilot.retrieval.agentic import SubQuery
+    from fakes import FakeChat, FakeReranker
+
+    plan = Plan(needs_search=True, sub_queries=[SubQuery(query="ERR_TIMEOUT client")])
+    chat = FakeChat({"plan": [plan, plan], "answer": [_cite_first, _cite_first]})
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: chat)
+    monkeypatch.setattr(cli, "build_reranker", lambda s: FakeReranker())
+    return chat
+
+
+def test_ask_prints_answer_sources_and_thread(ask_env):
+    r = runner.invoke(cli.app, ["ask", "What does ERR_TIMEOUT mean?"])
+    assert r.exit_code == 0, r.output
+    assert "It times out [" in r.output and "Sources:" in r.output
+    assert "[issue #11]" in r.output and "https://github.com/o/r/issue/11" in r.output
+    assert "thread: " in r.output and "this question: $" in r.output
+
+
+def test_ask_continues_a_thread(ask_env):
+    runner.invoke(cli.app, ["ask", "What does ERR_TIMEOUT mean?", "--thread", "abc123"])
+    r = runner.invoke(cli.app, ["ask", "And how do I fix it?", "--thread", "abc123"])
+    assert r.exit_code == 0 and "thread: abc123" in r.output
+    second_plan = " ".join(m["content"] for m in ask_env.calls_for("plan")[1]["messages"])
+    assert "What does ERR_TIMEOUT mean?" in second_plan
+
+
+def test_ask_budget_exceeded_is_friendly(cli_env, monkeypatch):
+    from copilot.llm.gateway import BudgetExceeded
+    from fakes import FakeChat, FakeReranker
+
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: FakeChat({"plan": [BudgetExceeded("ceiling")]}))
+    monkeypatch.setattr(cli, "build_reranker", lambda s: FakeReranker())
+    r = runner.invoke(cli.app, ["ask", "q"])
+    assert r.exit_code == 1 and "budget ceiling reached" in r.output
+
+
+@pytest.mark.parametrize("make_error", [
+    lambda: __import__("copilot.llm.gateway", fromlist=["LLMOutputError"]).LLMOutputError("refused"),
+    lambda: __import__("openai").APIConnectionError(request=__import__("httpx").Request("POST", "https://x")),
+])
+def test_ask_model_errors_are_friendly(cli_env, monkeypatch, make_error):
+    from fakes import FakeChat, FakeReranker
+
+    errors = [make_error() for _ in range(3)]  # LLMOutputError is retried 3x by the graph
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: FakeChat({"plan": errors}))
+    monkeypatch.setattr(cli, "build_reranker", lambda s: FakeReranker())
+    r = runner.invoke(cli.app, ["ask", "q"])
+    assert r.exit_code == 1 and "Traceback" not in r.output
+    assert "couldn't get an answer from the model" in r.output and "thread: " in r.output
+
+
 def test_init_db_is_safe_to_rerun(cli_env):
     r = runner.invoke(cli.app, ["init-db"])
     assert r.exit_code == 0 and "Schema ready" in r.output

@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     budget_usd: float = 8.0
     demo_repo: str = ""
     since_months: int = 12
+    # Agent (plan 2). Non-reasoning models: no hidden reasoning tokens, so cost is predictable.
+    planner_model: str = "gpt-4.1-nano"
+    answer_model: str = "gpt-4.1-mini"
+    reranker_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
+    rerank_keep: int = 4
+    # Calibrated 2026-10-19 on real Starlette questions: relevant chunks scored >= -0.5, irrelevant
+    # ones <= -1.14 (docs/results/2026-10-19-findings.md). Provisional until plan-4 evals.
+    rerank_min_score: float | None = -1.0
 
 
 @lru_cache

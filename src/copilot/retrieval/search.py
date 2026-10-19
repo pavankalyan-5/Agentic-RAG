@@ -10,7 +10,9 @@ from copilot.retrieval.models import Hit, SearchFilters
 
 SearchMode = Literal["dense", "sparse", "hybrid"]
 
-_HIT_COLUMNS = "c.id as chunk_id, c.document_id, c.content, c.doc_type, d.title, d.url, d.number"
+_HIT_COLUMNS = (
+    "c.id as chunk_id, c.document_id, c.content, c.doc_type, d.title, d.url, d.number, d.state, d.author"
+)
 
 
 def dense_search(
