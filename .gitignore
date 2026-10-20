@@ -5,3 +5,6 @@ __pycache__/
 .pytest_cache/
 data/
 .superpowers/
+
+# Eval snapshots are published as a GitHub release asset, never committed
+*.tar.gz

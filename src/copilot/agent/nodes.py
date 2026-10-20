@@ -25,7 +25,7 @@ MAX_SUBQUERIES = 3
 MAX_LIVE_LOOKUPS = 3
 # Live results get ids far above real chunk ids so the same [id] citation check covers them.
 LIVE_ID_BASE = 9_000_000
-MAX_CORRECTIONS = 1
+MAX_CORRECTIONS = 1  # one self-correction attempt per answer
 # "thanks!", "hi there", "ok that helped": a planner skip is trusted only for messages this short.
 SMALL_TALK_MAX_WORDS = 6
 # Fenced blocks and inline code spans: brackets there are code (arr[0]), never citations.
