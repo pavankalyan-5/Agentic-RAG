@@ -12,6 +12,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ra
 
 from copilot.config import Settings
 from copilot.llm.pricing import cost_usd
+from copilot.observability.tracing import set_attributes, span
 
 EMBED_BATCH_SIZE = 96
 
@@ -34,6 +35,8 @@ class BudgetExceeded(Exception):
 # Base class of every OpenAI SDK error (auth, connection, rate limit after retries, ...), re-exported
 # so callers can handle provider failures without importing openai themselves.
 ProviderError = openai.OpenAIError
+# The API rejected the request itself (e.g. a schema strict mode can't accept): retrying won't help.
+RequestRejected = openai.BadRequestError
 
 
 class LLMOutputError(Exception):
@@ -52,33 +55,61 @@ class LLMGateway:
     def __init__(self, conn: psycopg.Connection, settings: Settings, client=None):
         self.conn = conn
         self.settings = settings
-        self.client = client or openai.OpenAI(api_key=settings.openai_api_key)
+        self._client = client
+
+    @property
+    def client(self):
+        # Created on the first cache miss, not here: with no API key (CI on fork PRs), cached
+        # embeddings/answers must still work, and only a real miss should fail (with OpenAI's error).
+        if self._client is None:
+            self._client = openai.OpenAI(api_key=self.settings.openai_api_key)
+        return self._client
 
     def spent_usd(self) -> float:
         return spent_usd(self.conn)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         model = self.settings.embedding_model
-        keys = [_cache_key(model, t) for t in texts]
-        cached = self._cache_get(keys)
-        if cached:
-            self._record(model, "embed", 0, 0, 0.0, cached=True)
+        with span("llm.embed", "EMBEDDING", embedding__model_name=model, copilot__operation="embed",
+                  copilot__texts=len(texts)) as s:
+            keys = [_cache_key(model, t) for t in texts]
+            cached = self._cache_get(keys)
+            if cached:
+                self._record(model, "embed", 0, 0, 0.0, cached=True)
 
-        missing = [(k, t) for k, t in zip(keys, texts) if k not in cached]
-        for start in range(0, len(missing), EMBED_BATCH_SIZE):
-            batch = missing[start : start + EMBED_BATCH_SIZE]
-            self._check_budget()
-            resp = self._create_embeddings(model, [t for _, t in batch])
-            tokens = resp.usage.prompt_tokens
-            for (key, _), item in zip(batch, resp.data):
-                cached[key] = item.embedding
-                self._cache_put(key, model, item.embedding)
-            self._record(model, "embed", tokens, 0, cost_usd(model, tokens), cached=False)
-
-        return [cached[k] for k in keys]
+            missing = [(k, t) for k, t in zip(keys, texts) if k not in cached]
+            tokens_total, cost_total = 0, 0.0
+            for start in range(0, len(missing), EMBED_BATCH_SIZE):
+                batch = missing[start : start + EMBED_BATCH_SIZE]
+                self._check_budget()
+                resp = self._create_embeddings(model, [t for _, t in batch])
+                tokens = resp.usage.prompt_tokens
+                for (key, _), item in zip(batch, resp.data):
+                    cached[key] = item.embedding
+                    self._cache_put(key, model, item.embedding)
+                cost = cost_usd(model, tokens)
+                self._record(model, "embed", tokens, 0, cost, cached=False)
+                tokens_total, cost_total = tokens_total + tokens, cost_total + cost
+            set_attributes(s, copilot__cache_hit=not missing, copilot__cost_usd=cost_total,
+                           llm__token_count__prompt=tokens_total, llm__token_count__total=tokens_total)
+            return [cached[k] for k in keys]
 
     def chat(self, messages: list[dict], *, model: str, schema: type[T], operation: str) -> T:
         """Structured-output chat: returns an instance of `schema`. Identical requests are free."""
+        # The gateway is the one LLM span per call: it also sees cache hits, which never reach OpenAI.
+        with span(f"llm.{operation}", "LLM", llm__model_name=model, llm__provider="openai",
+                  copilot__operation=operation, input__value=messages[-1]["content"][:4000]) as s:
+            result, tokens = self._chat(messages, model=model, schema=schema, operation=operation)
+            cost = cost_usd(model, *tokens) if tokens else 0.0
+            set_attributes(s, copilot__cache_hit=tokens is None, copilot__cost_usd=cost,
+                           output__value=result.model_dump_json()[:4000])
+            if tokens:
+                set_attributes(s, llm__token_count__prompt=tokens[0], llm__token_count__completion=tokens[1],
+                               llm__token_count__total=tokens[0] + tokens[1])
+            return result
+
+    def _chat(self, messages: list[dict], *, model: str, schema: type[T], operation: str) -> tuple[T, tuple | None]:
+        """Returns (result, (prompt_tokens, completion_tokens)) or (result, None) on a cache hit."""
         key = _cache_key(
             model,
             json.dumps(
@@ -89,7 +120,7 @@ class LLMGateway:
         hit = self._cache_get([key]).get(key)
         if hit is not None:
             self._record(model, operation, 0, 0, 0.0, cached=True)
-            return schema.model_validate(hit)
+            return schema.model_validate(hit), None
 
         self._check_budget()
         resp = self._parse(model, messages, schema)
@@ -102,7 +133,34 @@ class LLMGateway:
             model, operation, usage.prompt_tokens, usage.completion_tokens,
             cost_usd(model, usage.prompt_tokens, usage.completion_tokens), cached=False,
         )
-        return message.parsed
+        return message.parsed, (usage.prompt_tokens, usage.completion_tokens)
+
+    def complete(self, messages: list[dict], *, model: str, operation: str) -> str:
+        """Free-text chat (for eval judges that want prose). Same cache, ledger and ceiling as chat()."""
+        with span(f"llm.{operation}", "LLM", llm__model_name=model, llm__provider="openai",
+                  copilot__operation=operation, input__value=messages[-1]["content"][:4000]) as s:
+            key = _cache_key(model, json.dumps({"mode": "complete", "messages": messages}, sort_keys=True))
+            hit = self._cache_get([key]).get(key)
+            if hit is not None:
+                self._record(model, operation, 0, 0, 0.0, cached=True)
+                set_attributes(s, copilot__cache_hit=True, copilot__cost_usd=0.0, output__value=hit[:4000])
+                return hit
+            self._check_budget()
+            resp = self._create_chat(model, messages)
+            text = resp.choices[0].message.content or ""
+            usage = resp.usage
+            cost = cost_usd(model, usage.prompt_tokens, usage.completion_tokens)
+            self._cache_put(key, model, text)
+            self._record(model, operation, usage.prompt_tokens, usage.completion_tokens, cost, cached=False)
+            set_attributes(s, copilot__cache_hit=False, copilot__cost_usd=cost, output__value=text[:4000],
+                           llm__token_count__prompt=usage.prompt_tokens,
+                           llm__token_count__completion=usage.completion_tokens,
+                           llm__token_count__total=usage.prompt_tokens + usage.completion_tokens)
+            return text
+
+    @_retry_transient
+    def _create_chat(self, model: str, messages: list[dict]):
+        return self.client.chat.completions.create(model=model, messages=messages, temperature=0)
 
     @_retry_transient
     def _create_embeddings(self, model: str, inputs: list[str]):

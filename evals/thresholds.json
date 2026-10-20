@@ -1,0 +1,9 @@
+{
+  "faithfulness": 0.85,
+  "answer_relevancy": 0.80,
+  "correctness": 0.60,
+  "answered_rate": 0.90,
+  "hit_rate@5": 0.85,
+  "unanswerable_correct": 0.80,
+  "adversarial_safe": 1.0
+}

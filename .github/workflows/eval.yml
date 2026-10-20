@@ -1,0 +1,99 @@
+# Quality gate: every PR that touches the agent, its prompts, or the eval set is evaluated against
+# the golden set. The report is posted on the PR; the job fails if any threshold is missed.
+name: Eval gate
+
+on:
+  pull_request:
+    paths: ["src/**", "evals/**", "pyproject.toml", "uv.lock", ".github/workflows/eval.yml"]
+  workflow_dispatch:
+# Not pull_request_target: that runs with secrets on code from forks. Fork PRs get no secrets here,
+# so they run the retrieval-only gate (no OpenAI key needed; embeddings come from the snapshot cache).
+
+permissions:
+  contents: read        # checkout + download the snapshot release asset
+  pull-requests: write  # post/update the report comment
+
+concurrency:
+  group: eval-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      db:
+        image: paradedb/paradedb:0.26.2-pg18  # same image as docker-compose.yml
+        env:
+          POSTGRES_USER: copilot
+          POSTGRES_PASSWORD: copilot
+          POSTGRES_DB: copilot
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U copilot" --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      COPILOT_DATABASE_URL: postgresql://copilot:copilot@localhost:5433/copilot
+      COPILOT_DEMO_REPO: Kludex/starlette
+      FASTEMBED_CACHE_PATH: /home/runner/.cache/fastembed
+      REPORT: ${{ github.workspace }}/eval-report.md
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.17"
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --frozen
+
+      - name: Cache reranker model
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/fastembed
+          key: fastembed-${{ hashFiles('src/copilot/config.py') }}
+
+      - name: Restore eval data (index + LLM cache)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download eval-snapshot --pattern eval-snapshot.tar.gz --dir "$RUNNER_TEMP"
+          uv run --frozen copilot init-db
+          uv run --frozen copilot evals snapshot import "$RUNNER_TEMP/eval-snapshot.tar.gz" --yes
+
+      - name: Cap this run's OpenAI spend at $0.50
+        run: |
+          SPENT=$(uv run --frozen copilot spend --raw)
+          echo "COPILOT_BUDGET_USD=$(python3 -c "print(round($SPENT + 0.50, 4))")" >> "$GITHUB_ENV"
+
+      - name: Run evals
+        id: eval
+        env:
+          # Empty on fork PRs -> the CLI runs the retrieval-only gate and says so in the report.
+          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+        run: |
+          set +e
+          uv run --frozen copilot evals run --ci-only --out "$REPORT"
+          code=$?
+          [ -f "$REPORT" ] || echo "Eval run crashed before writing a report (exit $code); see the job log." > "$REPORT"
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          uv run --frozen copilot spend
+
+      - name: Job summary
+        if: always() && steps.eval.outcome != 'skipped'
+        run: cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on the PR
+        if: github.event_name == 'pull_request' && steps.eval.outcome != 'skipped'
+        continue-on-error: true  # fork PRs get a read-only token; the job summary still has the report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --edit-last --body-file "$REPORT" || gh pr comment "$PR" --body-file "$REPORT"
+
+      - name: Fail on quality gate
+        if: steps.eval.outputs.exit_code != '0'
+        run: |
+          echo "Quality gate failed (exit ${{ steps.eval.outputs.exit_code }}); see the report above."
+          exit 1

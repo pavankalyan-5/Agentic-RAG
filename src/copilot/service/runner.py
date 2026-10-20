@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from langgraph.types import Command
 from psycopg.types.json import Jsonb
 
-from copilot.agent.graph import is_awaiting_approval, new_turn_input, turn_result
+from copilot.agent.graph import finish_turn_span, is_awaiting_approval, new_turn_input, turn_result, turn_span
 from copilot.db.connection import connect
 
 log = logging.getLogger("copilot.runner")
@@ -261,13 +261,16 @@ class ThreadRunner:
             with self.graph_factory() as graph, connect(self.database_url) as conn:
                 graph_input = work["input"] if "input" in work else _recovery_input(graph, thread_id, work["recover"])
                 if graph_input is not _ALREADY_FINISHED:
-                    for update in graph.stream(graph_input, _config(thread_id), stream_mode="updates"):
-                        for node in update:
-                            if node in NODE_LABELS:
-                                self._event(thread_id, node)
-                        signal.check()
-                        if not self._renew(conn, thread_id, token):
-                            raise LeaseLost()
+                    question = graph_input.get("question") if isinstance(graph_input, dict) else None
+                    with turn_span(thread_id, question, resumed=not isinstance(graph_input, dict)) as s:
+                        for update in graph.stream(graph_input, _config(thread_id), stream_mode="updates"):
+                            for node in update:
+                                if node in NODE_LABELS:
+                                    self._event(thread_id, node)
+                            signal.check()
+                            if not self._renew(conn, thread_id, token):
+                                raise LeaseLost()
+                        finish_turn_span(s, turn_result(graph, thread_id))
                 final = "awaiting_approval" if is_awaiting_approval(graph, thread_id) else "done"
                 self._finish(conn, thread_id, token, final)
         except LeaseLost:

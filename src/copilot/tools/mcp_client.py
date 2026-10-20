@@ -126,6 +126,18 @@ class MCPToolClient:
             self._stack = None
 
 
+def call_tool(tools: "ToolClient", name: str, arguments: dict):
+    """Call a tool inside a TOOL span (works for any ToolClient: MCP, fakes, future backends).
+    A ToolError propagating out marks the span ERROR; OpenTelemetry records the exception."""
+    from copilot.observability.tracing import span
+
+    with span(f"tool.{name}", "TOOL", tool__name=name, input__value=arguments) as s:
+        result = tools.call(name, arguments)
+        if s.is_recording():
+            s.set_attribute("output.value", json.dumps(result, default=str)[:2000])
+        return result
+
+
 def open_github_tools(settings: Settings, *, write: bool = False) -> MCPToolClient:
     """Build (not start) a client for GitHub's MCP server in Docker.
 

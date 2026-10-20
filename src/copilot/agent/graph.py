@@ -21,6 +21,7 @@ from copilot.agent.nodes import (
 )
 from copilot.agent.state import AgentState
 from copilot.llm.gateway import LLMOutputError
+from copilot.observability.tracing import set_attributes, span, traced_node
 
 
 class ThreadAwaitingApproval(Exception):
@@ -48,15 +49,19 @@ def build_graph(deps: AgentDeps, checkpointer, retry_initial_interval: float = 0
     llm_retry = RetryPolicy(max_attempts=3, initial_interval=retry_initial_interval, retry_on=LLMOutputError)
 
     g = StateGraph(AgentState)
-    g.add_node("plan", partial(plan_node, deps=deps), retry_policy=llm_retry)
-    g.add_node("retrieve", partial(retrieve_node, deps=deps))
-    g.add_node("live_lookup", partial(live_lookup_node, deps=deps))
-    g.add_node("synthesize", partial(synthesize_node, deps=deps), retry_policy=llm_retry)
-    g.add_node("verify", partial(verify_node, deps=deps))
-    g.add_node("propose_action", partial(propose_action_node, deps=deps), retry_policy=llm_retry)
-    g.add_node("approve", approve_node)
-    g.add_node("execute_action", partial(execute_action_node, deps=deps))
-    g.add_node("respond", respond_node)
+    def node(name, fn, wants_config=False):
+        return traced_node(name, fn, wants_config=wants_config)  # one span per node, nesting its work
+
+    g.add_node("plan", node("plan", partial(plan_node, deps=deps)), retry_policy=llm_retry)
+    g.add_node("retrieve", node("retrieve", partial(retrieve_node, deps=deps)))
+    g.add_node("live_lookup", node("live_lookup", partial(live_lookup_node, deps=deps)))
+    g.add_node("synthesize", node("synthesize", partial(synthesize_node, deps=deps)), retry_policy=llm_retry)
+    g.add_node("verify", node("verify", partial(verify_node, deps=deps)))
+    g.add_node("propose_action", node("propose_action", partial(propose_action_node, deps=deps), wants_config=True),
+               retry_policy=llm_retry)
+    g.add_node("approve", approve_node)  # not wrapped: interrupt() unwinds the node by raising
+    g.add_node("execute_action", node("execute_action", partial(execute_action_node, deps=deps)))
+    g.add_node("respond", node("respond", respond_node))
 
     g.add_edge(START, "plan")
     g.add_edge("plan", "retrieve")
@@ -99,8 +104,9 @@ def run_turn(graph, thread_id: str, question: str) -> dict:
     if is_awaiting_approval(graph, thread_id):
         # Starting a new turn would silently discard the paused action.
         raise ThreadAwaitingApproval(thread_id)
-    graph.invoke(new_turn_input(question), config=_config(thread_id))
-    return turn_result(graph, thread_id)
+    with turn_span(thread_id, question) as s:
+        graph.invoke(new_turn_input(question), config=_config(thread_id))
+        return finish_turn_span(s, turn_result(graph, thread_id))
 
 
 def new_turn_input(question: str) -> dict:
@@ -116,8 +122,20 @@ def new_turn_input(question: str) -> dict:
 
 def resume_turn(graph, thread_id: str, decision: dict) -> dict:
     """Continue a turn paused at `approve` with the human's decision."""
-    graph.invoke(Command(resume=decision), config=_config(thread_id))
-    return turn_result(graph, thread_id)
+    with turn_span(thread_id, None, resumed=True) as s:
+        graph.invoke(Command(resume=decision), config=_config(thread_id))
+        return finish_turn_span(s, turn_result(graph, thread_id))
+
+
+def turn_span(thread_id: str, question: str | None, resumed: bool = False):
+    """Root span of one turn. session.id groups a conversation's turns in Phoenix."""
+    return span("agent_turn", "CHAIN", session__id=thread_id, input__value=question, copilot__resumed=resumed)
+
+
+def finish_turn_span(s, result: dict) -> dict:
+    set_attributes(s, output__value=result.get("text"), copilot__status=result.get("status"),
+                   copilot__sources=len(result.get("sources") or []))
+    return result
 
 
 def turn_result(graph, thread_id: str) -> dict:

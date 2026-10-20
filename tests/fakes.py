@@ -37,11 +37,25 @@ class FakeOpenAI:
         self.chat_responses = list(chat_responses or [])
         self.chat_usage = usage
         self.chat_calls = 0
-        self.chat = SimpleNamespace(completions=SimpleNamespace(parse=self._parse))
+        self.complete_responses: list = []  # texts for chat.completions.create (an Exception is raised)
+        self.complete_calls = 0
+        self.chat = SimpleNamespace(completions=SimpleNamespace(parse=self._parse, create=self._create))
+
+    def _create(self, model: str, messages: list[dict], temperature: float = 0):
+        self.complete_calls += 1
+        text = self.complete_responses.pop(0)
+        if isinstance(text, Exception):
+            raise text
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=text, refusal=None))],
+            usage=SimpleNamespace(prompt_tokens=self.chat_usage[0], completion_tokens=self.chat_usage[1]),
+        )
 
     def _parse(self, model: str, messages: list[dict], response_format, temperature: float = 0):
         self.chat_calls += 1
         parsed = self.chat_responses.pop(0)
+        if isinstance(parsed, Exception):
+            raise parsed
         message = SimpleNamespace(parsed=parsed, refusal="I can't help with that" if parsed is None else None)
         return SimpleNamespace(
             choices=[SimpleNamespace(message=message)],

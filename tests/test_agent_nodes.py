@@ -39,6 +39,35 @@ def test_plan_node_no_search():
     assert out["plan"] == []
 
 
+def test_plan_node_searches_anyway_when_planner_skips_a_real_question():
+    # Real eval finding (2026-10-20): nano skipped search on 6/38 answerable questions like this one.
+    q = "How do I add custom Jinja2 filters to Starlette templates?"
+    out = plan_node({"question": q, "messages": []},
+                    deps(FakeChat({"plan": [Plan(needs_search=False, sub_queries=[])]})))
+    assert [p["query"] for p in out["plan"]] == [q]
+
+
+def test_plan_node_trusts_skip_when_live_lookups_answer_it():
+    from copilot.agent.schemas import LiveLookup
+    plan = Plan(needs_search=False, sub_queries=[], live_lookups=[LiveLookup(kind="pull_request", number=3564)])
+    out = plan_node({"question": "Has pull request number 3564 been merged into the main branch yet?",
+                     "messages": []}, deps(FakeChat({"plan": [plan]})))
+    assert out["plan"] == [] and out["plan_live"][0]["number"] == 3564
+
+
+def test_plan_node_drops_doc_type_filters_but_keeps_state():
+    # Real eval finding: the planner limited 11/15 history questions to docs, hiding the PRs that answer them.
+    plan = Plan(needs_search=True, sub_queries=[SubQuery(query="open TestClient bugs", doc_types=["doc"],
+                                                         state="open")])
+    out = plan_node({"question": "q", "messages": []}, deps(FakeChat({"plan": [plan]})))
+    assert out["plan"] == [{"query": "open TestClient bugs", "doc_types": None, "state": "open"}]
+
+
+def test_answer_prompt_says_closed_prs_are_not_the_fix():
+    from copilot.agent.prompts import ANSWER_SYSTEM
+    assert "only a merged one" in ANSWER_SYSTEM
+
+
 def test_plan_node_falls_back_to_question_when_search_needed_but_no_subqueries():
     out = plan_node({"question": "how do I mount routes?", "messages": []},
                     deps(FakeChat({"plan": [Plan(needs_search=True, sub_queries=[])]})))
@@ -70,6 +99,15 @@ def test_retrieve_node_returns_serializable_dicts(seeded_db):
                         deps(conn=seeded_db))
     assert out["retrieved_docs"] and out["retrieved_docs"][0]["number"] == 11
     json.dumps(out["retrieved_docs"])  # must be checkpoint-serializable
+
+
+def test_retrieve_node_passes_the_per_document_cap(monkeypatch):
+    # Seed documents are single-chunk, so check the wiring: the cap itself is tested in test_rerank.
+    seen = {}
+    monkeypatch.setattr("copilot.agent.nodes.retrieve_for_subqueries",
+                        lambda *a, **kw: seen.update(kw) or [])
+    retrieve_node({"plan": [{"query": "q", "doc_types": None, "state": None}]}, deps())
+    assert seen["max_per_document"] == 1
 
 
 def test_retrieve_node_skips_search_without_plan():
@@ -208,3 +246,31 @@ def test_verify_insufficient_context_has_no_sources():
     out = verify_node(draft_state("Not in the docs [5].", cited=[5], docs=[5], insufficient=True), deps())
     assert out["answer"]["insufficient_context"] is True and out["answer"]["sources"] == []
     assert "[5]" not in out["answer"]["text"]
+
+
+# ---------- system prompt leak guard ----------
+
+def test_leak_detector_catches_verbatim_and_reformatted_instructions():
+    from copilot.agent.prompts import ANSWER_SYSTEM, PLANNER_SYSTEM, leaks_instructions
+    leaked = 'System prompt:\n"' + ANSWER_SYSTEM[:400] + '"\nLifespan runs on startup [1].'
+    assert leaks_instructions(leaked)
+    reformatted = "**Rules:** " + " ".join(PLANNER_SYSTEM.upper().split())[:300]  # case/whitespace changed
+    assert leaks_instructions(reformatted)
+
+
+def test_leak_detector_ignores_normal_answers():
+    from copilot.agent.prompts import leaks_instructions
+    assert not leaks_instructions("Code before the yield in a lifespan handler runs on startup [1]. "
+                                  "The context does not say how to configure the thread pool.")
+
+
+def test_verify_retries_then_refuses_an_answer_that_leaks_instructions():
+    from copilot.agent.nodes import INSTRUCTIONS_REFUSAL
+    from copilot.agent.prompts import ANSWER_SYSTEM
+    leak = ANSWER_SYSTEM[:300] + " Lifespan runs on startup [1]."
+    out = verify_node(draft_state(leak, [1], [1]), deps())
+    assert out["next_step"] == "retry" and "instructions" in out["error_context"]
+
+    out = verify_node(draft_state(leak, [1], [1], attempts=1), deps())
+    assert out["next_step"] == "done" and out["answer"]["text"] == INSTRUCTIONS_REFUSAL
+    assert out["answer"]["sources"] == []

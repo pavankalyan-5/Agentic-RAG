@@ -6,6 +6,7 @@ from typing import Literal
 import psycopg
 
 from copilot.llm.gateway import Embedder
+from copilot.observability.tracing import record_documents, span
 from copilot.retrieval.models import Hit, SearchFilters
 
 SearchMode = Literal["dense", "sparse", "hybrid"]
@@ -79,6 +80,14 @@ def search(
 ) -> list[Hit]:
     if not query.strip():
         return []
+    with span("search", "RETRIEVER", input__value=query, copilot__mode=mode, copilot__k=k,
+              copilot__filters=filters.__dict__ if filters else None) as s:
+        hits = _search(conn, embedder, query, mode, k, filters)
+        record_documents(s, hits)
+        return hits
+
+
+def _search(conn, embedder: Embedder, query: str, mode: SearchMode, k: int, filters: SearchFilters | None) -> list[Hit]:
     if mode == "sparse":
         return sparse_search(conn, query, k, filters)
     query_vec = embedder.embed([query])[0]

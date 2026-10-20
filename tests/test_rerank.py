@@ -21,6 +21,14 @@ def test_rerank_min_score_drops_irrelevant():
     assert rerank(FakeReranker(), "lifespan", [hit(1, "nothing here")], keep=4, min_score=0.5) == []
 
 
+def test_rerank_caps_chunks_per_document():
+    # Real eval finding: three chunks of closed PR #3355 filled 3 of 4 slots and crowded out merged #3491.
+    hits = [hit(1, "streaming testclient"), hit(2, "streaming testclient again"), hit(3, "streaming")]
+    hits[1].document_id = 1  # chunks 1 and 2 belong to the same document
+    out = rerank(FakeReranker(), "streaming testclient", hits, keep=2, max_per_document=1)
+    assert [h.chunk_id for h in out] == [1, 3]
+
+
 def test_rerank_empty():
     assert rerank(FakeReranker(), "q", [], keep=4) == []
 

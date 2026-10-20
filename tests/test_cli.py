@@ -163,3 +163,163 @@ def test_ask_model_errors_are_friendly(cli_env, monkeypatch, make_error):
 def test_init_db_is_safe_to_rerun(cli_env):
     r = runner.invoke(cli.app, ["init-db"])
     assert r.exit_code == 0 and "Schema ready" in r.output
+
+
+def test_trace_report_command(cli_env, monkeypatch, tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    t0 = datetime(2026, 10, 20, tzinfo=timezone.utc)
+    rows = [{"name": "agent_turn", "span_kind": "CHAIN", "trace_id": "a", "start_time": t0,
+             "end_time": t0 + timedelta(seconds=3), "attributes": {}},
+            {"name": "llm.answer", "span_kind": "LLM", "trace_id": "a", "start_time": t0,
+             "end_time": t0 + timedelta(seconds=2), "attributes": {"copilot.cost_usd": 0.001, "copilot.cache_hit": False}}]
+    seen = {}
+    monkeypatch.setattr(cli, "fetch_spans", lambda s, since_hours: seen.setdefault("h", since_hours) and rows)
+    out = tmp_path / "report.md"
+    r = runner.invoke(cli.app, ["trace-report", "--since-hours", "6", "--out", str(out)])
+    assert r.exit_code == 0, r.output
+    assert seen["h"] == 6 and "1 turns" in r.output and "llm.answer" in out.read_text()
+
+
+@pytest.fixture
+def evals_env(cli_env, monkeypatch):
+    from fakes import FakeChat
+    from test_eval_dataset import drafter
+
+    monkeypatch.setenv("COPILOT_DEMO_REPO", "o/r")
+    get_settings.cache_clear()
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: FakeChat({"eval_draft": [drafter] * 30}))
+
+
+def test_evals_draft_writes_drafts_plus_seed_cases(evals_env, tmp_path):
+    from copilot.evals.dataset import load_golden
+
+    out = tmp_path / "golden_draft.jsonl"
+    r = runner.invoke(cli.app, ["evals", "draft", "--docs", "2", "--history", "2", "--multi", "1",
+                                "--min-chars", "0", "--out", str(out)])
+    assert r.exit_code == 0, r.output
+    cases = load_golden(out)
+    cats = [c.category for c in cases]
+    assert cats.count("docs") == 2 and "unanswerable" in cats and "adversarial" in cats
+    assert "review" in r.output.lower()
+
+
+def test_evals_draft_refuses_to_overwrite_golden(evals_env, tmp_path):
+    r = runner.invoke(cli.app, ["evals", "draft", "--out", str(tmp_path / "golden.jsonl")])
+    assert r.exit_code != 0 and "reviewed" in r.output
+
+
+def test_evals_check_reports_problems(evals_env, tmp_path):
+    from copilot.evals.dataset import EvalCase, write_cases
+
+    good = EvalCase(id="docs-01", category="docs", question="q", expected_sources=["doc:docs/config.md"],
+                    reference_answer="a", in_ci=True)
+    path = tmp_path / "golden.jsonl"
+    write_cases(path, [good])
+    r = runner.invoke(cli.app, ["evals", "check", "--path", str(path)])
+    assert r.exit_code == 0 and "docs: 1" in r.output and "in CI subset: 1" in r.output
+    write_cases(path, [good, good.model_copy(update={"id": "docs-02", "expected_sources": ["doc:gone.md"]})])
+    r = runner.invoke(cli.app, ["evals", "check", "--path", str(path)])
+    assert r.exit_code == 1 and "doc:gone.md" in r.output
+
+
+def test_evals_retrieval_command(evals_env, monkeypatch, tmp_path):
+    from copilot.evals.dataset import EvalCase, write_cases
+    from fakes import FakeReranker
+
+    monkeypatch.setattr(cli, "build_reranker", lambda s: FakeReranker())
+    path, out = tmp_path / "golden.jsonl", tmp_path / "retrieval.md"
+    write_cases(path, [EvalCase(id="h1", category="history", question="ERR_TIMEOUT raised by the client",
+                                expected_sources=["issue:11"], reference_answer="r")])
+    r = runner.invoke(cli.app, ["evals", "retrieval", "--path", str(path), "--out", str(out), "--k", "3"])
+    assert r.exit_code == 0, r.output
+    assert "| sparse |" in r.output and "hit rate@3" in out.read_text()
+
+
+def test_evals_retrieval_explains_missing_golden_file(evals_env, tmp_path):
+    r = runner.invoke(cli.app, ["evals", "retrieval", "--path", str(tmp_path / "golden.jsonl")])
+    assert r.exit_code != 0 and "golden_draft.jsonl" in r.output
+
+
+@pytest.fixture
+def run_env(cli_env, monkeypatch, tmp_path):
+    from copilot.agent.schemas import AnswerDraft, Plan
+    from copilot.evals.dataset import EvalCase, write_cases
+    from copilot.retrieval.agentic import SubQuery
+    from fakes import FakeChat, FakeReranker
+
+    monkeypatch.setenv("COPILOT_DEMO_REPO", "o/r")
+    get_settings.cache_clear()
+    plan = Plan(needs_search=True, sub_queries=[SubQuery(query="ERR_TIMEOUT client")])
+    chat = FakeChat({"plan": [plan] * 10, "answer": [_cite_first] * 10})
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: chat)
+    monkeypatch.setattr(cli, "build_reranker", lambda s: FakeReranker())
+    golden = tmp_path / "golden.jsonl"
+    write_cases(golden, [
+        EvalCase(id="h1", category="history", question="What does ERR_TIMEOUT mean?", expected_sources=["issue:11"],
+                 reference_answer="The client timed out.", in_ci=True),
+        EvalCase(id="h2", category="history", question="Not in CI", expected_sources=["issue:11"],
+                 reference_answer="x"),
+    ])
+    return golden, tmp_path
+
+
+def test_evals_run_no_judge_passes_gate_and_writes_report(run_env):
+    golden, tmp = run_env
+    thresholds = tmp / "t.json"
+    thresholds.write_text('{"hit_rate@5": 0.5}')
+    out = tmp / "answers.md"
+    r = runner.invoke(cli.app, ["evals", "run", "--path", str(golden), "--ci-only", "--no-judge",
+                                "--thresholds", str(thresholds), "--out", str(out)])
+    assert r.exit_code == 0, r.output
+    report = out.read_text()
+    assert "Quality gate: PASSED" in report and "hit_rate@5" in report and "| cases | 1 |" in report
+
+
+def test_evals_run_fails_the_gate_with_exit_code_1(run_env):
+    golden, tmp = run_env
+    thresholds = tmp / "t.json"
+    thresholds.write_text('{"hit_rate@5": 1.01}')
+    r = runner.invoke(cli.app, ["evals", "run", "--path", str(golden), "--no-judge", "--thresholds", str(thresholds)])
+    assert r.exit_code == 1 and "FAILED" in r.output
+
+
+def test_evals_run_without_openai_key_runs_retrieval_gate_only(run_env, monkeypatch):
+    # Fork PRs get no secrets: CI must still gate retrieval (cached embeddings) instead of crashing.
+    golden, tmp = run_env
+    monkeypatch.setenv("COPILOT_OPENAI_API_KEY", "")
+    monkeypatch.setattr(cli, "build_chat", lambda conn, s: pytest.fail("no key: the agent must not run"))
+    get_settings.cache_clear()
+    out = tmp / "report.md"
+    r = runner.invoke(cli.app, ["evals", "run", "--path", str(golden), "--ci-only", "--out", str(out)])
+    assert r.exit_code == 0, r.output
+    report = out.read_text()
+    assert "LLM-judged metrics skipped" in report and "Quality gate: PASSED" in report and "hit_rate@5" in report
+
+
+def test_evals_run_without_key_still_fails_a_bad_retrieval_gate(run_env, monkeypatch):
+    golden, tmp = run_env
+    monkeypatch.setenv("COPILOT_OPENAI_API_KEY", "")
+    get_settings.cache_clear()
+    thresholds = tmp / "t.json"
+    thresholds.write_text('{"hit_rate@5": 1.01, "faithfulness": 0.85}')
+    r = runner.invoke(cli.app, ["evals", "run", "--path", str(golden), "--thresholds", str(thresholds)])
+    assert r.exit_code == 1 and "hit_rate@5" in r.output and "faithfulness 0" not in r.output
+
+
+def test_spend_raw_prints_only_the_number(cli_env):
+    r = runner.invoke(cli.app, ["spend", "--raw"])
+    assert r.exit_code == 0 and float(r.output.strip()) == 0.0
+
+
+def test_snapshot_export_then_import_needs_confirmation(cli_env, tmp_path):
+    path = tmp_path / "eval-snapshot.tar.gz"
+    r = runner.invoke(cli.app, ["evals", "snapshot", "export", str(path)])
+    assert r.exit_code == 0 and path.exists() and "documents" in r.output, r.output
+
+    r = runner.invoke(cli.app, ["evals", "snapshot", "import", str(path)], input="n\n")
+    assert r.exit_code != 0  # declined: nothing replaced
+
+    r = runner.invoke(cli.app, ["evals", "snapshot", "import", str(path), "--yes"])
+    assert r.exit_code == 0 and "Imported" in r.output, r.output
+    assert cli_env.execute("select count(*) as n from documents").fetchone()["n"] == 6
