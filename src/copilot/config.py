@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     rerank_keep: int = 4
     # Calibrated 2026-10-19 on real Starlette questions: relevant chunks scored >= -0.5, irrelevant
     # ones <= -1.14 (docs/results/2026-10-19-findings.md). Provisional until plan-4 evals.
-    rerank_min_score: float | None = -1.0
+    rerank_min_score: float | None = 3.0
     # One chunk per document per sub-query: chunks of one closed PR crowded out the merged fix (eval
     # sweep 2026-10-20: merged fix in context 3/6 -> 5/6, hit rate unchanged). Bonus for merged PRs didn't help.
     rerank_max_per_document: int | None = 1
